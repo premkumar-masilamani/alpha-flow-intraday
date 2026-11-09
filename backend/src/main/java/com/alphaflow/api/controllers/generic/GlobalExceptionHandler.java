@@ -1,0 +1,51 @@
+package com.alphaflow.api.controllers.generic;
+
+import com.alphaflow.common.exceptions.ResourceNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+  @ExceptionHandler(ResourceNotFoundException.class)
+  public ResponseEntity<Map<String, Object>> handleNotFound(
+      ResourceNotFoundException ex, HttpServletRequest request) {
+    log.warn("Resource not found for path {}: {}", request.getRequestURI(), ex.getMessage());
+    return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<Map<String, Object>> handleBadRequest(
+      IllegalArgumentException ex, HttpServletRequest request) {
+    log.warn("Bad request for path {}: {}", request.getRequestURI(), ex.getMessage());
+    return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<Map<String, Object>> handleMissingParams(
+      MissingServletRequestParameterException ex, HttpServletRequest request) {
+    log.warn(
+        "Missing required parameter for path {}: {}", request.getRequestURI(), ex.getMessage());
+    return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+  }
+
+  private ResponseEntity<Map<String, Object>> build(
+      HttpStatus status, String message, HttpServletRequest request) {
+    return ResponseEntity.status(status)
+        .body(
+            Map.of(
+                "status", status.value(),
+                "error", status.getReasonPhrase(),
+                "message", message != null ? message : status.getReasonPhrase(),
+                "path", request.getRequestURI(),
+                "timestamp", Instant.now().toString()));
+  }
+}

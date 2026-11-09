@@ -1,0 +1,10 @@
+# Dependencies and Builds
+node_modules/
+dist/
+dist-ssr/
+
+# Local Environment Secrets
+*.local
+.env
+.env.*
+!.env.example
