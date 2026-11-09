@@ -12,11 +12,11 @@ describe('Header Component', () => {
         vi.clearAllMocks();
     });
 
-    it('renders the header with the title, calendar, clock, and dual market badges', async () => {
+    it('renders the header with the title, calendar, clock, and market status badge', async () => {
         vi.mocked(api.getCachedMarketHolidays).mockResolvedValueOnce([
             {
                 id: 1,
-                country: 'US',
+                country: 'IN',
                 holidayDate: '2026-01-01',
                 name: 'New Year’s Day',
             },
@@ -24,15 +24,16 @@ describe('Header Component', () => {
 
         render(<Header />);
 
-        const titleElement = screen.getByText('Alpha Flow');
+        const titleElement = screen.getByText('Alpha Flow Intraday');
         expect(titleElement).toBeInTheDocument();
         expect(titleElement).toHaveAttribute('id', 'app-title');
 
-        const nseBadge = screen.getByText(/NSE:/i);
-        expect(nseBadge).toBeInTheDocument();
+        const marketStatus = screen.getByText(/Market (Open|Closed)/i);
+        expect(marketStatus).toBeInTheDocument();
 
-        const nyseBadge = screen.getByText(/NYSE:/i);
-        expect(nyseBadge).toBeInTheDocument();
+        // Old dual badges should be removed
+        expect(screen.queryByText(/NSE:/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/NYSE:/i)).not.toBeInTheDocument();
 
         await waitFor(() => {
             expect(api.getCachedMarketHolidays).toHaveBeenCalledTimes(1);
@@ -44,10 +45,10 @@ describe('Header Component', () => {
 
         render(<Header />);
 
-        const titleElement = screen.getByText('Alpha Flow');
+        const titleElement = screen.getByText('Alpha Flow Intraday');
         expect(titleElement).toBeInTheDocument();
 
-        const nseBadge = screen.getByText(/NSE:/i);
-        expect(nseBadge).toBeInTheDocument();
+        const marketStatus = screen.getByText(/Market (Open|Closed)/i);
+        expect(marketStatus).toBeInTheDocument();
     });
 });

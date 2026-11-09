@@ -97,7 +97,7 @@ describe('App Intraday Root View', () => {
     expect(screen.queryByRole('button', { name: /charts/i })).not.toBeInTheDocument();
 
     // Check header and sidebar
-    expect(screen.getByText('Alpha Flow')).toBeInTheDocument();
+    expect(screen.getByText('Alpha Flow Intraday')).toBeInTheDocument();
     expect(screen.getAllByText('NIFTY50').length).toBeGreaterThanOrEqual(1);
   });
 

@@ -29,7 +29,6 @@ const Header: React.FC = () => {
     }, []);
 
     const inStatus = getMarketStatus(currentTime, 'IN', holidays);
-    const usStatus = getMarketStatus(currentTime, 'US', holidays);
 
     const formattedDate = currentTime.toLocaleDateString(undefined, {
         weekday: 'short',
@@ -48,58 +47,39 @@ const Header: React.FC = () => {
         <header className="bg-slate-900 text-white px-4 py-3 shadow-md flex items-center justify-between border-b border-slate-800 gap-3 flex-wrap">
             <div className="flex items-center gap-2">
                 <TrendingUp className="text-blue-400" />
-                <h1 className="text-xl font-bold tracking-tight" id="app-title">Alpha Flow</h1>
+                <h1 className="text-xl font-bold tracking-tight" id="app-title">Alpha Flow Intraday</h1>
             </div>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-3">
                 <div
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                         inStatus.isOpen
                             ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
                             : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
                     }`}
-                    id="nse-market-status"
-                    title={inStatus.holidayName ? `Holiday: ${inStatus.holidayName}` : undefined}
+                    id="market-status"
+                    title={inStatus.holidayName ? `Holiday: ${inStatus.holidayName}` : inStatus.displayMessage}
                 >
                     <span
                         className={`w-2 h-2 rounded-full inline-block ${
                             inStatus.isOpen
-                                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse'
                                 : 'bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.8)]'
                         }`}
                     />
-                    <span>🇮🇳 NSE: {inStatus.displayMessage}</span>
+                    <span>{inStatus.isOpen ? 'Market Open' : 'Market Closed'}</span>
                 </div>
 
-                <div
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                        usStatus.isOpen
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                            : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
-                    }`}
-                    id="nyse-market-status"
-                    title={usStatus.holidayName ? `Holiday: ${usStatus.holidayName}` : undefined}
-                >
-                    <span
-                        className={`w-2 h-2 rounded-full inline-block ${
-                            usStatus.isOpen
-                                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
-                                : 'bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.8)]'
-                        }`}
-                    />
-                    <span>🇺🇸 NYSE: {usStatus.displayMessage}</span>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-3 bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-lg shadow-inner">
-                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                    <Calendar size={14} className="text-blue-400" />
-                    <span>{formattedDate}</span>
-                </div>
-                <span className="text-slate-700">|</span>
-                <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-200">
-                    <Clock size={14} className="text-emerald-400" />
-                    <span>{formattedTime}</span>
+                <div className="flex items-center gap-3 bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-lg shadow-inner">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                        <Calendar size={14} className="text-blue-400" />
+                        <span>{formattedDate}</span>
+                    </div>
+                    <span className="text-slate-700">|</span>
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-200">
+                        <Clock size={14} className="text-emerald-400" />
+                        <span>{formattedTime}</span>
+                    </div>
                 </div>
             </div>
         </header>
