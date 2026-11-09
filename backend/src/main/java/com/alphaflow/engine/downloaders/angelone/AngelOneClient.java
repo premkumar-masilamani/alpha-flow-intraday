@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -73,6 +74,10 @@ public class AngelOneClient {
   }
 
   public static final int ANGEL_ONE_15M_MAX_CHUNK_DAYS = 200;
+  public static final int MAX_RATE_LIMIT_RETRIES = 3;
+  public static final long INITIAL_BACKOFF_MS = 2000L;
+  public static final double BACKOFF_MULTIPLIER = 2.0;
+
   private static final DateTimeFormatter CHUNK_DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -143,53 +148,87 @@ public class AngelOneClient {
       return Collections.emptyList();
     }
 
-    try {
-      rateLimiter.throttleAngelOneCandles();
-      ResponseEntity<String> response =
-          restClient
-              .post()
-              .uri(config.getCandleUrl())
-              .headers(
-                  headers ->
-                      networkHelper.applyAuthenticatedHeaders(headers, config.getApiKey(), jwt))
-              .body(body)
-              .retrieve()
-              .toEntity(String.class);
+    int maxAttempts = MAX_RATE_LIMIT_RETRIES + 1;
+    long currentBackoffMs = INITIAL_BACKOFF_MS;
 
-      String responseBody = response.getBody();
-      if (responseBody != null) {
-        JsonNode root = objectMapper.readTree(responseBody);
-        if (root.path("status").asBoolean(false)) {
-          JsonNode dataNode = root.path("data");
-          if (dataNode.isArray()) {
-            List<AngelOneCandle> candles = new ArrayList<>();
-            for (JsonNode row : dataNode) {
-              if (row.isArray() && row.size() >= 6) {
-                OffsetDateTime ts = parseTimestamp(row.get(0).asText());
-                BigDecimal open = new BigDecimal(row.get(1).asText());
-                BigDecimal high = new BigDecimal(row.get(2).asText());
-                BigDecimal low = new BigDecimal(row.get(3).asText());
-                BigDecimal close = new BigDecimal(row.get(4).asText());
-                BigDecimal volume = new BigDecimal(row.get(5).asText());
-                candles.add(new AngelOneCandle(ts, open, high, low, close, volume));
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        rateLimiter.throttleAngelOneCandles();
+        ResponseEntity<String> response =
+            restClient
+                .post()
+                .uri(config.getCandleUrl())
+                .headers(
+                    headers ->
+                        networkHelper.applyAuthenticatedHeaders(headers, config.getApiKey(), jwt))
+                .body(body)
+                .retrieve()
+                .toEntity(String.class);
+
+        String responseBody = response.getBody();
+        if (responseBody != null) {
+          JsonNode root = objectMapper.readTree(responseBody);
+          if (root.path("status").asBoolean(false)) {
+            JsonNode dataNode = root.path("data");
+            if (dataNode.isArray()) {
+              List<AngelOneCandle> candles = new ArrayList<>();
+              for (JsonNode row : dataNode) {
+                if (row.isArray() && row.size() >= 6) {
+                  OffsetDateTime ts = parseTimestamp(row.get(0).asText());
+                  BigDecimal open = new BigDecimal(row.get(1).asText());
+                  BigDecimal high = new BigDecimal(row.get(2).asText());
+                  BigDecimal low = new BigDecimal(row.get(3).asText());
+                  BigDecimal close = new BigDecimal(row.get(4).asText());
+                  BigDecimal volume = new BigDecimal(row.get(5).asText());
+                  candles.add(new AngelOneCandle(ts, open, high, low, close, volume));
+                }
               }
+              return candles;
             }
-            return candles;
+          } else {
+            String message = root.path("message").asText();
+            String errorCode = root.path("errorcode").asText();
+            if (isRateLimitError(message, errorCode) && attempt < maxAttempts) {
+              log.warn(
+                  "Angel One rate limit encountered in response (attempt {}/{}): {} (code: {}). Backing off for {} ms...",
+                  attempt,
+                  maxAttempts,
+                  message,
+                  errorCode,
+                  currentBackoffMs);
+              sleepBackoff(currentBackoffMs);
+              currentBackoffMs = (long) (currentBackoffMs * BACKOFF_MULTIPLIER);
+              continue;
+            }
+            log.warn(
+                "Angel One getCandleData returned status false: {} (code: {})", message, errorCode);
+            if ("AG8001".equalsIgnoreCase(errorCode) || message.toLowerCase().contains("token")) {
+              authManager.invalidateSession();
+            }
           }
         } else {
-          String message = root.path("message").asText();
-          String errorCode = root.path("errorcode").asText();
-          log.warn(
-              "Angel One getCandleData returned status false: {} (code: {})", message, errorCode);
-          if ("AG8001".equalsIgnoreCase(errorCode) || message.toLowerCase().contains("token")) {
-            authManager.invalidateSession();
-          }
+          log.warn("Empty response body from getCandleData");
         }
-      } else {
-        log.warn("Empty response body from getCandleData");
+        return Collections.emptyList();
+      } catch (HttpStatusCodeException exception) {
+        if (isRateLimitException(exception) && attempt < maxAttempts) {
+          log.warn(
+              "Angel One rate limit exceeded (HTTP {}): {} (attempt {}/{}). Backing off for {} ms...",
+              exception.getStatusCode().value(),
+              exception.getMessage(),
+              attempt,
+              maxAttempts,
+              currentBackoffMs);
+          sleepBackoff(currentBackoffMs);
+          currentBackoffMs = (long) (currentBackoffMs * BACKOFF_MULTIPLIER);
+        } else {
+          log.warn("Failed to fetch candle data from Angel One: {}", exception.getMessage());
+          return Collections.emptyList();
+        }
+      } catch (RestClientException | JsonProcessingException exception) {
+        log.warn("Failed to fetch candle data from Angel One: {}", exception.getMessage());
+        return Collections.emptyList();
       }
-    } catch (RestClientException | JsonProcessingException e) {
-      log.warn("Failed to fetch candle data from Angel One: {}", e.getMessage());
     }
     return Collections.emptyList();
   }
@@ -206,79 +245,151 @@ public class AngelOneClient {
         return Collections.emptyMap();
       }
 
-      try {
-        rateLimiter.throttleAngelOneLiveQuote();
-        ResponseEntity<String> response =
-            restClient
-                .post()
-                .uri(config.getQuoteUrl())
-                .headers(
-                    headers ->
-                        networkHelper.applyAuthenticatedHeaders(headers, config.getApiKey(), jwt))
-                .body(body)
-                .retrieve()
-                .toEntity(String.class);
+      int maxAttempts = MAX_RATE_LIMIT_RETRIES + 1;
+      long currentBackoffMs = INITIAL_BACKOFF_MS;
 
-        String responseBody = response.getBody();
-        if (responseBody != null) {
-          JsonNode root = objectMapper.readTree(responseBody);
-          if (root.path("status").asBoolean(false)) {
-            JsonNode fetchedList = root.path("data").path("fetched");
-            if (fetchedList.isArray()) {
-              Map<String, AngelOneQuote> quotes = new HashMap<>();
-              for (JsonNode item : fetchedList) {
-                String token = item.path("symbolToken").asText();
-                if (!token.isBlank()) {
-                  BigDecimal ltp =
-                      item.hasNonNull("ltp")
-                          ? new BigDecimal(item.path("ltp").asText())
-                          : BigDecimal.ZERO;
-                  BigDecimal open =
-                      item.hasNonNull("open")
-                          ? new BigDecimal(item.path("open").asText())
-                          : ltp;
-                  BigDecimal high =
-                      item.hasNonNull("high")
-                          ? new BigDecimal(item.path("high").asText())
-                          : ltp;
-                  BigDecimal low =
-                      item.hasNonNull("low")
-                          ? new BigDecimal(item.path("low").asText())
-                          : ltp;
-                  BigDecimal close =
-                      item.hasNonNull("close")
-                          ? new BigDecimal(item.path("close").asText())
-                          : ltp;
-                  BigDecimal changePercent =
-                      item.hasNonNull("changePercent")
-                          ? new BigDecimal(item.path("changePercent").asText())
-                          : (item.hasNonNull("pChange")
-                              ? new BigDecimal(item.path("pChange").asText())
-                              : BigDecimal.ZERO);
-                  String timestamp =
-                      item.hasNonNull("exchFeedTime")
-                          ? item.path("exchFeedTime").asText()
-                          : OffsetDateTime.now(IST_ZONE).toString();
-                  quotes.put(
-                      token,
-                      new AngelOneQuote(ltp, open, high, low, close, changePercent, timestamp));
+      for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          rateLimiter.throttleAngelOneLiveQuote();
+          ResponseEntity<String> response =
+              restClient
+                  .post()
+                  .uri(config.getQuoteUrl())
+                  .headers(
+                      headers ->
+                          networkHelper.applyAuthenticatedHeaders(headers, config.getApiKey(), jwt))
+                  .body(body)
+                  .retrieve()
+                  .toEntity(String.class);
+
+          String responseBody = response.getBody();
+          if (responseBody != null) {
+            JsonNode root = objectMapper.readTree(responseBody);
+            if (root.path("status").asBoolean(false)) {
+              JsonNode fetchedList = root.path("data").path("fetched");
+              if (fetchedList.isArray()) {
+                Map<String, AngelOneQuote> quotes = new HashMap<>();
+                for (JsonNode item : fetchedList) {
+                  String token = item.path("symbolToken").asText();
+                  if (!token.isBlank()) {
+                    BigDecimal ltp =
+                        item.hasNonNull("ltp")
+                            ? new BigDecimal(item.path("ltp").asText())
+                            : BigDecimal.ZERO;
+                    BigDecimal open =
+                        item.hasNonNull("open")
+                            ? new BigDecimal(item.path("open").asText())
+                            : ltp;
+                    BigDecimal high =
+                        item.hasNonNull("high")
+                            ? new BigDecimal(item.path("high").asText())
+                            : ltp;
+                    BigDecimal low =
+                        item.hasNonNull("low")
+                            ? new BigDecimal(item.path("low").asText())
+                            : ltp;
+                    BigDecimal close =
+                        item.hasNonNull("close")
+                            ? new BigDecimal(item.path("close").asText())
+                            : ltp;
+                    BigDecimal changePercent =
+                        item.hasNonNull("changePercent")
+                            ? new BigDecimal(item.path("changePercent").asText())
+                            : (item.hasNonNull("pChange")
+                                ? new BigDecimal(item.path("pChange").asText())
+                                : BigDecimal.ZERO);
+                    String timestamp =
+                        item.hasNonNull("exchFeedTime")
+                            ? item.path("exchFeedTime").asText()
+                            : OffsetDateTime.now(IST_ZONE).toString();
+                    quotes.put(
+                        token,
+                        new AngelOneQuote(ltp, open, high, low, close, changePercent, timestamp));
+                  }
                 }
+                return quotes;
               }
-              return quotes;
-            }
-          } else {
-            String errorCode = root.path("errorcode").asText();
-            if ("AG8001".equalsIgnoreCase(errorCode)) {
-              authManager.invalidateSession();
+            } else {
+              String message = root.path("message").asText();
+              String errorCode = root.path("errorcode").asText();
+              if (isRateLimitError(message, errorCode) && attempt < maxAttempts) {
+                log.warn(
+                    "Angel One quote rate limit encountered in response (attempt {}/{}): {}. Backing off for {} ms...",
+                    attempt,
+                    maxAttempts,
+                    message,
+                    currentBackoffMs);
+                sleepBackoff(currentBackoffMs);
+                currentBackoffMs = (long) (currentBackoffMs * BACKOFF_MULTIPLIER);
+                continue;
+              }
+              if ("AG8001".equalsIgnoreCase(errorCode)) {
+                authManager.invalidateSession();
+              }
             }
           }
+          return Collections.emptyMap();
+        } catch (HttpStatusCodeException exception) {
+          if (isRateLimitException(exception) && attempt < maxAttempts) {
+            log.warn(
+                "Angel One quote rate limit exceeded (HTTP {}): {} (attempt {}/{}). Backing off for {} ms...",
+                exception.getStatusCode().value(),
+                exception.getMessage(),
+                attempt,
+                maxAttempts,
+                currentBackoffMs);
+            sleepBackoff(currentBackoffMs);
+            currentBackoffMs = (long) (currentBackoffMs * BACKOFF_MULTIPLIER);
+          } else {
+            log.warn("Failed to fetch quotes from Angel One: {}", exception.getMessage());
+            return Collections.emptyMap();
+          }
+        } catch (RestClientException | JsonProcessingException exception) {
+          log.warn("Failed to fetch quotes from Angel One: {}", exception.getMessage());
+          return Collections.emptyMap();
         }
-      } catch (RestClientException | JsonProcessingException e) {
-        log.warn("Failed to fetch quotes from Angel One: {}", e.getMessage());
       }
       return Collections.emptyMap();
     } else {
       return Collections.emptyMap();
+    }
+  }
+
+  boolean isRateLimitException(HttpStatusCodeException exception) {
+    int statusCode = exception.getStatusCode().value();
+    if (statusCode == 429) {
+      return true;
+    }
+    if (statusCode == 403) {
+      String responseBody = exception.getResponseBodyAsString();
+      String message = exception.getMessage();
+      return (responseBody != null && responseBody.toLowerCase().contains("exceeding access rate"))
+          || (message != null && message.toLowerCase().contains("exceeding access rate"));
+    }
+    return false;
+  }
+
+  boolean isRateLimitError(String message, String errorCode) {
+    if (message != null) {
+      String lower = message.toLowerCase();
+      if (lower.contains("exceeding access rate")
+          || lower.contains("too many requests")
+          || lower.contains("rate limit")) {
+        return true;
+      }
+    }
+    return "AG8003".equalsIgnoreCase(errorCode);
+  }
+
+  void sleepBackoff(long durationMs) {
+    long effectiveSleep = (config.getDelayMilliseconds() == 0) ? 0 : durationMs;
+    if (effectiveSleep > 0) {
+      try {
+        Thread.sleep(effectiveSleep);
+      } catch (InterruptedException exception) {
+        Thread.currentThread().interrupt();
+        log.warn("Rate limit backoff sleep interrupted: {}", exception.getMessage());
+      }
     }
   }
 

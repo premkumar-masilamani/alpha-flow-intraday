@@ -378,4 +378,204 @@ class AngelOneClientTest {
     assertTrue(client.fetch15mCandles("NSE", "99926000", null, OffsetDateTime.now()).isEmpty());
     assertTrue(client.fetch15mCandles("NSE", "99926000", OffsetDateTime.now(), null).isEmpty());
   }
+
+  @Test
+  void testGetCandleDataHttp403RateLimitBackoffSuccess() {
+    AtomicInteger attemptCounter = new AtomicInteger(0);
+    String successJson =
+        """
+        {
+          "status": true,
+          "message": "SUCCESS",
+          "errorcode": "",
+          "data": [
+            ["2026-09-23T09:15:00+05:30", 25000.5, 25050.0, 24980.25, 25040.0, 15000]
+          ]
+        }
+        """;
+
+    server.createContext(
+        "/rest/secure/angelbroking/historical/v1/getCandleData/rate-limit-retry",
+        exchange -> {
+          int currentAttempt = attemptCounter.incrementAndGet();
+          if (currentAttempt == 1) {
+            byte[] bytes = "Access denied because of exceeding access rate".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(403, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+              os.write(bytes);
+            }
+          } else {
+            byte[] bytes = successJson.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+              os.write(bytes);
+            }
+          }
+        });
+
+    config.setCandleUrl(
+        "http://localhost:"
+            + server.getAddress().getPort()
+            + "/rest/secure/angelbroking/historical/v1/getCandleData/rate-limit-retry");
+
+    List<AngelOneCandle> candles =
+        client.getCandleData(
+            MarketConfig.EXCHANGE_NSE,
+            "99926000",
+            IntradayTimeframe._15M,
+            "2026-09-23 09:15",
+            "2026-09-23 15:30");
+
+    assertEquals(2, attemptCounter.get(), "Expected 1 retry after 403 rate limit");
+    assertNotNull(candles);
+    assertEquals(1, candles.size());
+    assertEquals(new BigDecimal("25000.5"), candles.getFirst().open());
+  }
+
+  @Test
+  void testGetCandleDataHttp403RateLimitMaxRetriesExceeded() {
+    AtomicInteger attemptCounter = new AtomicInteger(0);
+
+    server.createContext(
+        "/rest/secure/angelbroking/historical/v1/getCandleData/rate-limit-max",
+        exchange -> {
+          attemptCounter.incrementAndGet();
+          byte[] bytes = "Access denied because of exceeding access rate".getBytes(StandardCharsets.UTF_8);
+          exchange.sendResponseHeaders(403, bytes.length);
+          try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+          }
+        });
+
+    config.setCandleUrl(
+        "http://localhost:"
+            + server.getAddress().getPort()
+            + "/rest/secure/angelbroking/historical/v1/getCandleData/rate-limit-max");
+
+    List<AngelOneCandle> candles =
+        client.getCandleData(
+            MarketConfig.EXCHANGE_NSE,
+            "99926000",
+            IntradayTimeframe._15M,
+            "2026-09-23 09:15",
+            "2026-09-23 15:30");
+
+    assertEquals(4, attemptCounter.get(), "Expected initial attempt + 3 retries (4 total)");
+    assertNotNull(candles);
+    assertTrue(candles.isEmpty());
+  }
+
+  @Test
+  void testGetCandleDataJsonRateLimitBackoffSuccess() {
+    AtomicInteger attemptCounter = new AtomicInteger(0);
+    String rateLimitJson =
+        """
+        {
+          "status": false,
+          "message": "Access denied because of exceeding access rate",
+          "errorcode": "AG8003",
+          "data": null
+        }
+        """;
+    String successJson =
+        """
+        {
+          "status": true,
+          "message": "SUCCESS",
+          "errorcode": "",
+          "data": [
+            ["2026-09-23T09:15:00+05:30", 25000.5, 25050.0, 24980.25, 25040.0, 15000]
+          ]
+        }
+        """;
+
+    server.createContext(
+        "/rest/secure/angelbroking/historical/v1/getCandleData/json-rate-limit",
+        exchange -> {
+          int currentAttempt = attemptCounter.incrementAndGet();
+          byte[] bytes = (currentAttempt == 1 ? rateLimitJson : successJson).getBytes(StandardCharsets.UTF_8);
+          exchange.getResponseHeaders().set("Content-Type", "application/json");
+          exchange.sendResponseHeaders(200, bytes.length);
+          try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+          }
+        });
+
+    config.setCandleUrl(
+        "http://localhost:"
+            + server.getAddress().getPort()
+            + "/rest/secure/angelbroking/historical/v1/getCandleData/json-rate-limit");
+
+    List<AngelOneCandle> candles =
+        client.getCandleData(
+            MarketConfig.EXCHANGE_NSE,
+            "99926000",
+            IntradayTimeframe._15M,
+            "2026-09-23 09:15",
+            "2026-09-23 15:30");
+
+    assertEquals(2, attemptCounter.get(), "Expected 1 retry after JSON status=false rate limit");
+    assertEquals(1, candles.size());
+  }
+
+  @Test
+  void testGetMarketQuotesHttp403RateLimitBackoffSuccess() {
+    AtomicInteger attemptCounter = new AtomicInteger(0);
+    String successJson =
+        """
+        {
+          "status": true,
+          "message": "SUCCESS",
+          "errorcode": "",
+          "data": {
+            "fetched": [
+              {
+                "symbolToken": "99926000",
+                "ltp": 25000.5,
+                "open": 24950.0,
+                "high": 25050.0,
+                "low": 24900.0,
+                "close": 24980.0,
+                "changePercent": 0.5,
+                "exchFeedTime": "2026-09-23T15:30:00+05:30"
+              }
+            ]
+          }
+        }
+        """;
+
+    server.createContext(
+        "/rest/secure/angelbroking/market/v1/quote/rate-limit",
+        exchange -> {
+          int currentAttempt = attemptCounter.incrementAndGet();
+          if (currentAttempt == 1) {
+            byte[] bytes = "Access denied because of exceeding access rate".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(403, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+              os.write(bytes);
+            }
+          } else {
+            byte[] bytes = successJson.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+              os.write(bytes);
+            }
+          }
+        });
+
+    config.setQuoteUrl(
+        "http://localhost:"
+            + server.getAddress().getPort()
+            + "/rest/secure/angelbroking/market/v1/quote/rate-limit");
+
+    Map<String, AngelOneQuote> quotes =
+        client.getMarketQuotes(MarketConfig.EXCHANGE_NSE, List.of("99926000"));
+
+    assertEquals(2, attemptCounter.get(), "Expected 1 retry after 403 quote rate limit");
+    assertNotNull(quotes);
+    assertEquals(1, quotes.size());
+    assertEquals(new BigDecimal("25000.5"), quotes.get("99926000").lastPrice());
+  }
 }
