@@ -63,6 +63,9 @@ public class AngelOneClient {
     if ("NIFTY50".equalsIgnoreCase(symbol)) {
       return "99926000";
     }
+    if ("BANKNIFTY".equalsIgnoreCase(symbol)) {
+      return "99926009";
+    }
     return symbol;
   }
 

@@ -163,6 +163,7 @@ class AngelOneClientTest {
   @Test
   void testResolveToken() {
     assertEquals("99926000", AngelOneClient.resolveToken("NIFTY50"));
+    assertEquals("99926009", AngelOneClient.resolveToken("BANKNIFTY"));
     assertEquals("UNKNOWN", AngelOneClient.resolveToken("UNKNOWN"));
   }
 
