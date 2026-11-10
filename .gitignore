@@ -1,8 +1,6 @@
 # Local Environment Secrets
-.env
-*.env
-*.env.*
-!.env.example
+*.env.local
+.env.local
 
 # OS generated files
 **/.DS_Store

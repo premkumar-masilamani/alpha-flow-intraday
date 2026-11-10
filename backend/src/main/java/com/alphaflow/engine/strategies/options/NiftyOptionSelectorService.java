@@ -1,15 +1,14 @@
 package com.alphaflow.engine.strategies.options;
 
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.angelone.AngelOneClient;
 import com.alphaflow.engine.downloaders.angelone.AngelOneScripMasterManager;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneInstrument;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneQuote;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.alphaflow.engine.strategies.options.dtos.RecommendedOptionDto;
 import com.alphaflow.engine.strategies.options.enums.OptionType;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -94,7 +93,7 @@ public class NiftyOptionSelectorService {
 
   private boolean isEligibleNiftyEvaluation(Ticker ticker, LocalDate sessionDate) {
     if (ticker != null && isNiftySymbol(ticker.getTickerSymbol())) {
-      return MarketTradingCalendar.isTradingDay(sessionDate, Country.IN);
+      return TradingCalendarService.isTradingDay(sessionDate);
     } else {
       return false;
     }

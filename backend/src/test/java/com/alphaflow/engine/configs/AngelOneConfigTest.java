@@ -22,7 +22,6 @@ class AngelOneConfigTest {
     config.setCandleUrl("https://candle.example.com");
     config.setQuoteUrl("https://quote.example.com");
     config.setScripMasterUrl("https://master.example.com");
-    config.setDelayMilliseconds(1500L);
     config.setTokenTtl(Duration.ofSeconds(3600));
     config.setSessionStartTime(LocalTime.of(9, 15));
     config.setSessionEndTime(LocalTime.of(15, 30));
@@ -36,7 +35,6 @@ class AngelOneConfigTest {
     assertEquals("https://candle.example.com", config.getCandleUrl());
     assertEquals("https://quote.example.com", config.getQuoteUrl());
     assertEquals("https://master.example.com", config.getScripMasterUrl());
-    assertEquals(1500L, config.getDelayMilliseconds());
     assertEquals(Duration.ofSeconds(3600L), config.getTokenTtl());
     assertEquals(LocalTime.of(9, 15), config.getSessionStartTime());
     assertEquals(LocalTime.of(15, 30), config.getSessionEndTime());
@@ -62,7 +60,6 @@ class AngelOneConfigTest {
     assertEquals(
         "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json",
         config.getScripMasterUrl());
-    assertEquals(1000L, config.getDelayMilliseconds());
     assertEquals(Duration.ofSeconds(72000), config.getTokenTtl());
     assertEquals(LocalTime.of(9, 15), config.getSessionStartTime());
     assertEquals(LocalTime.of(15, 30), config.getSessionEndTime());

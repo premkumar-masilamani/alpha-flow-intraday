@@ -40,7 +40,6 @@ class AngelOneAuthManagerTest {
     angelOneTotpGenerator = new AngelOneTotpGenerator();
     objectMapper = new ObjectMapper();
     AngelOneNetworkHelper networkHelper = new AngelOneNetworkHelper();
-    config.setDelayMilliseconds(0);
     RateLimiterConfig rateLimiterConfig = RateLimiterConfig.builder().delayMilliseconds(0L).build();
     RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
     authManager =

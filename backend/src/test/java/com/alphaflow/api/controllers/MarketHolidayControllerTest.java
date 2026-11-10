@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 
 import com.alphaflow.api.dtos.MarketHolidayDto;
 import com.alphaflow.api.services.MarketHolidayService;
-import com.alphaflow.persistence.enums.Country;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -20,9 +19,9 @@ class MarketHolidayControllerTest {
     MarketHolidayDto dto =
         MarketHolidayDto.builder()
             .id(1L)
-            .country(Country.US)
-            .holidayDate(LocalDate.of(2026, 1, 1))
-            .name("New Year's Day")
+            .country("IN")
+            .holidayDate(LocalDate.of(2026, 1, 26))
+            .name("Republic Day")
             .build();
 
     when(service.getHolidays()).thenReturn(List.of(dto));
@@ -31,7 +30,7 @@ class MarketHolidayControllerTest {
     List<MarketHolidayDto> result = controller.getHolidays();
 
     assertEquals(1, result.size());
-    assertEquals("New Year's Day", result.getFirst().name());
+    assertEquals("Republic Day", result.getFirst().name());
     verify(service).getHolidays();
   }
 }

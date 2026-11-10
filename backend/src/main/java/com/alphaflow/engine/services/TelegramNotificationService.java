@@ -17,7 +17,7 @@ import org.springframework.web.client.RestClient;
 
 @Slf4j
 @Service
-public class TelegramNotificationService implements NotificationService {
+public class TelegramNotificationService {
 
   private static final Set<Character> RESERVED_CHARACTERS =
       Set.of(
@@ -51,7 +51,6 @@ public class TelegramNotificationService implements NotificationService {
     }
   }
 
-  @Override
   public void sendNotification(String message) {
     if (message != null) {
       int maxLength = telegramConfig.getMaxMessageLength();

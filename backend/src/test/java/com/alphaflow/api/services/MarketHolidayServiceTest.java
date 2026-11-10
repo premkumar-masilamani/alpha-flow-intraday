@@ -7,9 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.alphaflow.api.dtos.MarketHolidayDto;
-import com.alphaflow.api.mappers.MarketHolidayMapper;
+import com.alphaflow.common.mappers.MarketHolidayMapper;
 import com.alphaflow.persistence.entities.MarketHoliday;
-import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.MarketHolidayRepository;
 import java.time.LocalDate;
 import java.util.List;
@@ -32,9 +31,9 @@ class MarketHolidayServiceTest {
     MarketHoliday holiday =
         MarketHoliday.builder()
             .marketHolidayId(1L)
-            .country(Country.US)
-            .holidayDate(LocalDate.of(2026, 1, 1))
-            .name("New Year's Day")
+            .country("IN")
+            .holidayDate(LocalDate.of(2026, 1, 26))
+            .name("Republic Day")
             .build();
 
     when(marketHolidayRepository.findAllByOrderByHolidayDateAsc()).thenReturn(List.of(holiday));
@@ -43,9 +42,9 @@ class MarketHolidayServiceTest {
 
     assertEquals(1, result.size());
     assertEquals(1L, result.getFirst().id());
-    assertEquals(Country.US, result.getFirst().country());
-    assertEquals(LocalDate.of(2026, 1, 1), result.getFirst().holidayDate());
-    assertEquals("New Year's Day", result.getFirst().name());
+    assertEquals("IN", result.getFirst().country());
+    assertEquals(LocalDate.of(2026, 1, 26), result.getFirst().holidayDate());
+    assertEquals("Republic Day", result.getFirst().name());
     verify(marketHolidayRepository).findAllByOrderByHolidayDateAsc();
   }
 

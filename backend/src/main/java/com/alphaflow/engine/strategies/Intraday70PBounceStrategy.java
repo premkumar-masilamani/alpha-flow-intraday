@@ -1,12 +1,11 @@
 package com.alphaflow.engine.strategies;
 
-import com.alphaflow.common.enums.IntradayTimeframe;
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
+import com.alphaflow.common.enums.Timeframe;
 import com.alphaflow.engine.configs.MarketConfig;
-import com.alphaflow.engine.indicators.dtos.PriceBar;
-import com.alphaflow.engine.services.NotificationService;
+import com.alphaflow.engine.dtos.PriceBar;
 import com.alphaflow.engine.services.NotificationTemplateEngine;
 import com.alphaflow.engine.services.TelegramNotificationService;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.alphaflow.engine.strategies.model.Intraday70PBounceStrategyState;
 import com.alphaflow.engine.strategies.options.NiftyOptionSelectorService;
 import com.alphaflow.engine.strategies.options.dtos.RecommendedOptionDto;
@@ -14,7 +13,6 @@ import com.alphaflow.engine.strategies.options.enums.OptionType;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.IntradayPriceRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -42,7 +40,7 @@ public class Intraday70PBounceStrategy {
       DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
 
   private final IntradayPriceRepository intradayPriceRepository;
-  private final NotificationService notificationService;
+  private final TelegramNotificationService notificationService;
   private final NiftyOptionSelectorService niftyOptionSelectorService;
   private final NotificationTemplateEngine notificationTemplateEngine;
   private final ConcurrentMap<Long, Intraday70PBounceStrategyState> stateMap =
@@ -50,7 +48,7 @@ public class Intraday70PBounceStrategy {
 
   public Intraday70PBounceStrategy(
       IntradayPriceRepository intradayPriceRepository,
-      NotificationService notificationService,
+      TelegramNotificationService notificationService,
       NiftyOptionSelectorService niftyOptionSelectorService,
       NotificationTemplateEngine notificationTemplateEngine) {
     this.intradayPriceRepository = intradayPriceRepository;
@@ -94,7 +92,7 @@ public class Intraday70PBounceStrategy {
 
   private Optional<PriceBar> fetchPreviousTradingDayData(Ticker ticker, LocalDate sessionDate) {
     LocalDate previousTradingDate =
-        MarketTradingCalendar.getPreviousTradingDay(sessionDate, Country.IN);
+        TradingCalendarService.getPreviousTradingDay(sessionDate);
 
     ZoneId zoneId = MarketConfig.IST_ZONE;
     OffsetDateTime startOfDay = previousTradingDate.atStartOfDay(zoneId).toOffsetDateTime();
@@ -103,7 +101,7 @@ public class Intraday70PBounceStrategy {
 
     List<IntradayPrice> prices =
         intradayPriceRepository.findByTickerAndTimeframeAndPriceTimeBetweenOrderByPriceTimeAsc(
-            ticker, IntradayTimeframe._15M.getValue(), startOfDay, endOfDay);
+            ticker, Timeframe._15M.getValue(), startOfDay, endOfDay);
 
     if (!prices.isEmpty()) {
       BigDecimal high =

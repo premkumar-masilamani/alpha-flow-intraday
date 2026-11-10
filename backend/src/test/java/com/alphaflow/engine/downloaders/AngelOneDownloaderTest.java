@@ -12,8 +12,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.alphaflow.common.enums.IntradayTimeframe;
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
+import com.alphaflow.common.enums.Timeframe;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.angelone.AngelOneClient;
@@ -21,7 +21,6 @@ import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneCandle;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneQuote;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.IntradayPriceRepository;
 import com.alphaflow.persistence.repositories.LiveQuoteRepository;
 import com.alphaflow.persistence.repositories.TickerRepository;
@@ -55,7 +54,6 @@ class AngelOneDownloaderTest {
     config.setClientCode("test-code");
     config.setPassword("test-pwd");
     config.setTotpKey("test-totp");
-    config.setDelayMilliseconds(0);
     config.setSessionStartTime(LocalTime.of(9, 15));
     config.setSessionEndTime(LocalTime.of(15, 30));
     config.setBackfillStartDate(LocalDate.of(2015, 1, 1));
@@ -71,7 +69,7 @@ class AngelOneDownloaderTest {
   @Test
   void testDownloadEmptyActiveTickers() {
     when(intradayRepo.findLatestPriceTimesForActiveTickers(
-            IntradayTimeframe._15M.getValue()))
+            Timeframe._15M.getValue()))
         .thenReturn(Map.of());
 
     int result = downloader.downloadAndPersistIntradayPrices();
@@ -91,7 +89,7 @@ class AngelOneDownloaderTest {
     // Latest saved time is far in future (greater than expected completed time)
     OffsetDateTime futureTime = OffsetDateTime.now(istZone).plusDays(1);
     when(intradayRepo.findLatestPriceTimesForActiveTickers(
-            IntradayTimeframe._15M.getValue()))
+            Timeframe._15M.getValue()))
         .thenReturn(Map.of(ticker, futureTime));
 
     int result = downloader.downloadAndPersistIntradayPrices();
@@ -109,15 +107,14 @@ class AngelOneDownloaderTest {
             .build();
 
     OffsetDateTime expectedCompletedTime =
-        MarketTradingCalendar.getExpectedLatestCompletedCandleTime(
+        TradingCalendarService.getExpectedLatestCompletedCandleTime(
             ZonedDateTime.now(istZone),
             config.getSessionStartTime(),
             config.getSessionEndTime(),
-            15,
-            Country.IN);
+            15);
     OffsetDateTime latestTime = expectedCompletedTime.minusMinutes(30);
     when(intradayRepo.findLatestPriceTimesForActiveTickers(
-            IntradayTimeframe._15M.getValue()))
+            Timeframe._15M.getValue()))
         .thenReturn(Map.of(ticker, latestTime));
 
     // Candle 1: older than latestTime (filtered out by timestamp > effectiveMinTime)
@@ -175,16 +172,15 @@ class AngelOneDownloaderTest {
     Map<Ticker, OffsetDateTime> tickerMap = new LinkedHashMap<>();
     tickerMap.put(ticker, null);
     when(intradayRepo.findLatestPriceTimesForActiveTickers(
-            IntradayTimeframe._15M.getValue()))
+            Timeframe._15M.getValue()))
         .thenReturn(tickerMap);
 
     OffsetDateTime expectedCompletedTime =
-        MarketTradingCalendar.getExpectedLatestCompletedCandleTime(
+        TradingCalendarService.getExpectedLatestCompletedCandleTime(
             ZonedDateTime.now(istZone),
             config.getSessionStartTime(),
             config.getSessionEndTime(),
-            15,
-            Country.IN);
+            15);
 
     config.setBackfillStartDate(expectedCompletedTime.toLocalDate().minusDays(3));
 
@@ -232,15 +228,14 @@ class AngelOneDownloaderTest {
             .build();
 
     OffsetDateTime expectedCompletedTime =
-        MarketTradingCalendar.getExpectedLatestCompletedCandleTime(
+        TradingCalendarService.getExpectedLatestCompletedCandleTime(
             ZonedDateTime.now(istZone),
             config.getSessionStartTime(),
             config.getSessionEndTime(),
-            15,
-            Country.IN);
+            15);
     OffsetDateTime latestTime = expectedCompletedTime.minusMinutes(30);
     when(intradayRepo.findLatestPriceTimesForActiveTickers(
-            IntradayTimeframe._15M.getValue()))
+            Timeframe._15M.getValue()))
         .thenReturn(Map.of(ticker, latestTime));
 
     OffsetDateTime candleTime = expectedCompletedTime.minusMinutes(15);
@@ -283,15 +278,14 @@ class AngelOneDownloaderTest {
             .build();
 
     OffsetDateTime expectedCompletedTime =
-        MarketTradingCalendar.getExpectedLatestCompletedCandleTime(
+        TradingCalendarService.getExpectedLatestCompletedCandleTime(
             ZonedDateTime.now(istZone),
             config.getSessionStartTime(),
             config.getSessionEndTime(),
-            15,
-            Country.IN);
+            15);
     OffsetDateTime latestTime = expectedCompletedTime.minusMinutes(30);
     when(intradayRepo.findLatestPriceTimesForActiveTickers(
-            IntradayTimeframe._15M.getValue()))
+            Timeframe._15M.getValue()))
         .thenReturn(Map.of(ticker, latestTime));
 
     when(client.fetch15mCandles(any(), any(), any(), any())).thenReturn(List.of());
@@ -312,15 +306,14 @@ class AngelOneDownloaderTest {
             .build();
 
     OffsetDateTime expectedCompletedTime =
-        MarketTradingCalendar.getExpectedLatestCompletedCandleTime(
+        TradingCalendarService.getExpectedLatestCompletedCandleTime(
             ZonedDateTime.now(istZone),
             config.getSessionStartTime(),
             config.getSessionEndTime(),
-            15,
-            Country.IN);
+            15);
     OffsetDateTime latestTime = expectedCompletedTime.minusMinutes(30);
     when(intradayRepo.findLatestPriceTimesForActiveTickers(
-            IntradayTimeframe._15M.getValue()))
+            Timeframe._15M.getValue()))
         .thenReturn(Map.of(ticker, latestTime));
 
     // Candle equal to latestTime -> timestamp.isAfter(latestTime) is false

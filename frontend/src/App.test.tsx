@@ -57,8 +57,6 @@ describe('App Intraday Root View', () => {
         id: 1,
         symbol: 'NIFTY50',
         name: 'NIFTY 50',
-        type: 'INDEX',
-        country: 'IN',
       },
     ]);
     vi.mocked(api.getCachedMarketHolidays).mockResolvedValue([

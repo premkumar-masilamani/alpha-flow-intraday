@@ -11,7 +11,7 @@ import com.alphaflow.api.dtos.QuoteDto;
 import com.alphaflow.api.services.IntradayPriceService;
 import com.alphaflow.api.services.LiveQuoteService;
 import com.alphaflow.api.services.TickerService;
-import com.alphaflow.common.enums.IntradayTimeframe;
+import com.alphaflow.common.enums.Timeframe;
 import com.alphaflow.common.exceptions.ResourceNotFoundException;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.persistence.entities.Ticker;
@@ -49,10 +49,10 @@ class IntradayPriceControllerTest {
     LocalDate todayInMarket = LocalDate.now(MarketConfig.IST_ZONE);
 
     when(intradayPriceService.getIntradayPrice(
-            ticker, IntradayTimeframe._15M, todayInMarket, 0, 250))
+            ticker, Timeframe._15M, todayInMarket, 0, 250))
         .thenReturn(List.of(dto));
     when(intradayPriceService.getIntradayPrice(
-            ticker, IntradayTimeframe._15M, explicitEndDate, 0, 250))
+            ticker, Timeframe._15M, explicitEndDate, 0, 250))
         .thenReturn(List.of(dto));
 
     IntradayPriceController controller =
@@ -60,14 +60,14 @@ class IntradayPriceControllerTest {
 
     // Call without endDate (resolves to today)
     List<OhlcvDto> resultWithoutEndDate =
-        controller.getIntradayPriceDataForTicker("NIFTY50", IntradayTimeframe._15M, 0, 250, null);
+        controller.getIntradayPriceDataForTicker("NIFTY50", Timeframe._15M, 0, 250, null);
     assertEquals(1, resultWithoutEndDate.size());
     assertEquals(candleTime, resultWithoutEndDate.getFirst().priceDate());
 
     // Call with explicit endDate
     List<OhlcvDto> resultWithEndDate =
         controller.getIntradayPriceDataForTicker(
-            "NIFTY50", IntradayTimeframe._15M, 0, 250, explicitEndDate);
+            "NIFTY50", Timeframe._15M, 0, 250, explicitEndDate);
     assertEquals(1, resultWithEndDate.size());
     assertEquals(candleTime, resultWithEndDate.getFirst().priceDate());
 
@@ -96,21 +96,21 @@ class IntradayPriceControllerTest {
     LocalDate todayInMarket = LocalDate.now(MarketConfig.IST_ZONE);
 
     when(intradayPriceService.getIntradayPrice(
-            eq(ticker), eq(IntradayTimeframe._15M), eq(todayInMarket), eq(0), eq(1000)))
+            eq(ticker), eq(Timeframe._15M), eq(todayInMarket), eq(0), eq(1000)))
         .thenReturn(List.of());
     when(intradayPriceService.getIntradayPrice(
-            eq(ticker), eq(IntradayTimeframe._15M), eq(todayInMarket), eq(0), eq(1)))
+            eq(ticker), eq(Timeframe._15M), eq(todayInMarket), eq(0), eq(1)))
         .thenReturn(List.of());
 
     IntradayPriceController controller =
         new IntradayPriceController(intradayPriceService, liveQuoteService, tickerService);
 
     List<OhlcvDto> clampedMax =
-        controller.getIntradayPriceDataForTicker("NIFTY50", IntradayTimeframe._15M, 0, 5000, null);
+        controller.getIntradayPriceDataForTicker("NIFTY50", Timeframe._15M, 0, 5000, null);
     assertEquals(0, clampedMax.size());
 
     List<OhlcvDto> clampedMin =
-        controller.getIntradayPriceDataForTicker("NIFTY50", IntradayTimeframe._15M, 0, -5, null);
+        controller.getIntradayPriceDataForTicker("NIFTY50", Timeframe._15M, 0, -5, null);
     assertEquals(0, clampedMin.size());
   }
 
@@ -148,6 +148,6 @@ class IntradayPriceControllerTest {
         ResourceNotFoundException.class,
         () ->
             controller.getIntradayPriceDataForTicker(
-                "UNKNOWN", IntradayTimeframe._15M, 0, 250, null));
+                "UNKNOWN", Timeframe._15M, 0, 250, null));
   }
 }

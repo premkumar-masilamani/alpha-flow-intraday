@@ -1,13 +1,13 @@
 package com.alphaflow.engine.downloaders.angelone;
 
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneInstrument;
-import com.alphaflow.persistence.enums.Country;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -54,8 +54,33 @@ public class AngelOneScripMasterManager {
         (restClientBuilder != null ? restClientBuilder : RestClient.builder()).build();
   }
 
+  @PostConstruct
+  public void initializeScripMaster() {
+    log.info("Triggering eager Angel One Scrip Master pre-warm on application startup...");
+    preWarmScripMaster();
+  }
+
+  public void preWarmScripMaster(LocalDate sessionDate) {
+    if (TradingCalendarService.isTradingDay(sessionDate)) {
+      if (!sessionDate.equals(cachedSessionDate)) {
+        log.info("Eagerly pre-warming Angel One Scrip Master for trading date {}...", sessionDate);
+        refreshCache(sessionDate);
+      } else {
+        log.info("Angel One Scrip Master is already pre-warmed for session date {}.", sessionDate);
+      }
+    } else {
+      log.info(
+          "Skipping Angel One Scrip Master pre-warm: {} is not an active Indian trading day.",
+          sessionDate);
+    }
+  }
+
+  public void preWarmScripMaster() {
+    preWarmScripMaster(LocalDate.now(MarketConfig.IST_ZONE));
+  }
+
   public List<AngelOneInstrument> getNfoOptions(String underlyingName, LocalDate sessionDate) {
-    if (MarketTradingCalendar.isTradingDay(sessionDate, Country.IN)) {
+    if (TradingCalendarService.isTradingDay(sessionDate)) {
       if (!sessionDate.equals(cachedSessionDate)) {
         refreshCache(sessionDate);
       }

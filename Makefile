@@ -1,7 +1,11 @@
 # Gracefully handle missing local environment configurations in CI/CD
 -include .env
+-include .env.local
 ifneq ($(wildcard .env),)
     export $(shell sed 's/=.*//' .env)
+endif
+ifneq ($(wildcard .env.local),)
+    export $(shell sed 's/=.*//' .env.local)
 endif
 
 .PHONY: all run_database connect_database run_backend run_frontend test lint

@@ -1,12 +1,13 @@
 package com.alphaflow.engine.schedulers;
 
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.AngelOneDownloader;
+import com.alphaflow.engine.downloaders.angelone.AngelOneScripMasterManager;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.alphaflow.engine.strategies.Intraday70PBounceStrategy;
+import com.alphaflow.engine.utils.SchedulerUtils;
 import com.alphaflow.persistence.entities.LiveQuote;
-import com.alphaflow.persistence.enums.Country;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,16 +25,25 @@ public class IntradayScheduler {
   private final AngelOneConfig angelOneConfig;
   private final AngelOneDownloader angelOneDownloader;
   private final Intraday70PBounceStrategy intraday70PBounceStrategy;
+  private final AngelOneScripMasterManager angelOneScripMasterManager;
   private final AtomicBoolean candleSyncRunning = new AtomicBoolean(false);
   private final AtomicBoolean liveQuoteRunning = new AtomicBoolean(false);
 
   public IntradayScheduler(
       AngelOneConfig angelOneConfig,
       AngelOneDownloader angelOneDownloader,
-      Intraday70PBounceStrategy intraday70PBounceStrategy) {
+      Intraday70PBounceStrategy intraday70PBounceStrategy,
+      AngelOneScripMasterManager angelOneScripMasterManager) {
     this.angelOneConfig = angelOneConfig;
     this.angelOneDownloader = angelOneDownloader;
     this.intraday70PBounceStrategy = intraday70PBounceStrategy;
+    this.angelOneScripMasterManager = angelOneScripMasterManager;
+  }
+
+  @Scheduled(cron = "0 0 9 * * MON-FRI", zone = MarketConfig.TIMEZONE_KOLKATA)
+  public void runScheduledScripMasterPreWarm() {
+    log.info("Starting scheduled daily Angel One Scrip Master pre-warm at 9 AM IST...");
+    angelOneScripMasterManager.preWarmScripMaster();
   }
 
   @Scheduled(cron = "30 0,15,30,45 9-15 * * MON-FRI", zone = MarketConfig.TIMEZONE_KOLKATA)
@@ -51,6 +61,7 @@ public class IntradayScheduler {
   @EventListener(ApplicationReadyEvent.class)
   public void runOnStartup() {
     log.info("Starting initial Angel One intraday sync upon startup...");
+    angelOneScripMasterManager.preWarmScripMaster();
     syncIntradayCandles();
     runLiveQuoteUpdate();
   }
@@ -80,11 +91,10 @@ public class IntradayScheduler {
 
   public void runLiveQuoteUpdate() {
     ZonedDateTime currentMarketTime = ZonedDateTime.now(MarketConfig.IST_ZONE);
-    if (MarketTradingCalendar.isMarketSessionOpen(
+    if (TradingCalendarService.isMarketSessionOpen(
         currentMarketTime,
         angelOneConfig.getSessionStartTime(),
-        angelOneConfig.getSessionEndTime(),
-        Country.IN)) {
+        angelOneConfig.getSessionEndTime())) {
       if (liveQuoteRunning.compareAndSet(false, true)) {
         log.info("Starting scheduled Angel One 1-minute live quote update...");
         long cycleStart = System.currentTimeMillis();
