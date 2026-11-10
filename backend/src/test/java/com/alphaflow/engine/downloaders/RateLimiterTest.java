@@ -1,9 +1,10 @@
 package com.alphaflow.engine.downloaders;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.alphaflow.engine.configs.AngelOneConfig;
+import com.alphaflow.engine.configs.RateLimiterConfig;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
@@ -11,22 +12,28 @@ class RateLimiterTest {
 
   @Test
   void testAllEndpointThrottlesWithZeroDelay() {
-    AngelOneConfig angelOneConfig = new AngelOneConfig();
-    angelOneConfig.setDelayMilliseconds(0);
+    RateLimiterConfig rateLimiterConfig =
+        RateLimiterConfig.builder()
+            .delayMilliseconds(0L)
+            .interChunkDelayMilliseconds(0L)
+            .build();
 
-    RateLimiter rateLimiter = new RateLimiter(angelOneConfig);
+    RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
 
     assertDoesNotThrow(rateLimiter::throttleAngelOneLogin);
     assertDoesNotThrow(rateLimiter::throttleAngelOneCandles);
     assertDoesNotThrow(rateLimiter::throttleAngelOneLiveQuote);
+    assertDoesNotThrow(rateLimiter::throttleInterChunk);
   }
 
   @Test
   void testThrottlePositiveDelay() {
-    AngelOneConfig angelOneConfig = new AngelOneConfig();
-    angelOneConfig.setDelayMilliseconds(20);
+    RateLimiterConfig rateLimiterConfig =
+        RateLimiterConfig.builder()
+            .delayMilliseconds(20L)
+            .build();
 
-    RateLimiter rateLimiter = new RateLimiter(angelOneConfig);
+    RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
 
     long start = System.currentTimeMillis();
     rateLimiter.throttleAngelOneCandles();
@@ -38,10 +45,12 @@ class RateLimiterTest {
 
   @Test
   void testThrottleExplicitDelayElapsedBranch() {
-    AngelOneConfig angelOneConfig = new AngelOneConfig();
-    angelOneConfig.setDelayMilliseconds(0);
+    RateLimiterConfig rateLimiterConfig =
+        RateLimiterConfig.builder()
+            .delayMilliseconds(0L)
+            .build();
 
-    RateLimiter rateLimiter = new RateLimiter(angelOneConfig);
+    RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
     AtomicLong tracker = new AtomicLong(0);
 
     rateLimiter.throttle(tracker, 5);
@@ -55,14 +64,59 @@ class RateLimiterTest {
 
   @Test
   void testThrottleInterrupted() {
-    AngelOneConfig angelOneConfig = new AngelOneConfig();
-    angelOneConfig.setDelayMilliseconds(1000);
+    RateLimiterConfig rateLimiterConfig =
+        RateLimiterConfig.builder()
+            .delayMilliseconds(1000L)
+            .build();
 
-    RateLimiter rateLimiter = new RateLimiter(angelOneConfig);
+    RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
     AtomicLong tracker = new AtomicLong(System.currentTimeMillis() + 500);
 
     Thread.currentThread().interrupt();
     assertDoesNotThrow(() -> rateLimiter.throttle(tracker, 500));
     assertTrue(Thread.interrupted(), "Expected thread interrupt flag to be preserved");
+  }
+
+  @Test
+  void testCalculateBackoffWithJitter() {
+    RateLimiterConfig rateLimiterConfig =
+        RateLimiterConfig.builder()
+            .initialBackoffMs(5000L)
+            .backoffMultiplier(2.0)
+            .jitterRangeMs(1000L)
+            .maxRateLimitRetries(4)
+            .build();
+
+    RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
+
+    assertEquals(4, rateLimiter.getMaxRateLimitRetries());
+
+    long backoffAttempt1 = rateLimiter.calculateBackoffMs(1);
+    assertTrue(
+        backoffAttempt1 >= 5000L && backoffAttempt1 <= 6000L,
+        "Attempt 1 backoff must be between 5000 and 6000ms, got " + backoffAttempt1);
+
+    long backoffAttempt2 = rateLimiter.calculateBackoffMs(2);
+    assertTrue(
+        backoffAttempt2 >= 10000L && backoffAttempt2 <= 11000L,
+        "Attempt 2 backoff must be between 10000 and 11000ms, got " + backoffAttempt2);
+
+    long backoffAttempt3 = rateLimiter.calculateBackoffMs(3);
+    assertTrue(
+        backoffAttempt3 >= 20000L && backoffAttempt3 <= 21000L,
+        "Attempt 3 backoff must be between 20000 and 21000ms, got " + backoffAttempt3);
+  }
+
+  @Test
+  void testApplyBackoffZeroDelayDoesNotBlock() {
+    RateLimiterConfig rateLimiterConfig =
+        RateLimiterConfig.builder()
+            .initialBackoffMs(0L)
+            .jitterRangeMs(1L)
+            .maxRateLimitRetries(4)
+            .build();
+
+    RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
+    assertDoesNotThrow(() -> rateLimiter.applyBackoff(1, "testContext"));
   }
 }

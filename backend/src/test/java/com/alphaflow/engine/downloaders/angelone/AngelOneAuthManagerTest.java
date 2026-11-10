@@ -3,6 +3,7 @@ package com.alphaflow.engine.downloaders.angelone;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.alphaflow.engine.configs.AngelOneConfig;
+import com.alphaflow.engine.configs.RateLimiterConfig;
 import com.alphaflow.engine.downloaders.RateLimiter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
@@ -40,7 +41,8 @@ class AngelOneAuthManagerTest {
     objectMapper = new ObjectMapper();
     AngelOneNetworkHelper networkHelper = new AngelOneNetworkHelper();
     config.setDelayMilliseconds(0);
-    RateLimiter rateLimiter = new RateLimiter(config);
+    RateLimiterConfig rateLimiterConfig = RateLimiterConfig.builder().delayMilliseconds(0L).build();
+    RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
     authManager =
         new AngelOneAuthManager(
             config, angelOneTotpGenerator, objectMapper, networkHelper, rateLimiter, RestClient.builder());

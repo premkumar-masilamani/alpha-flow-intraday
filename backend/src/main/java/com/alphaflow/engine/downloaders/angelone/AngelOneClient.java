@@ -77,9 +77,6 @@ public class AngelOneClient {
   }
 
   public static final int ANGEL_ONE_15M_MAX_CHUNK_DAYS = 200;
-  public static final int MAX_RATE_LIMIT_RETRIES = 3;
-  public static final long INITIAL_BACKOFF_MS = 2000L;
-  public static final double BACKOFF_MULTIPLIER = 2.0;
 
   private static final DateTimeFormatter CHUNK_DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -121,6 +118,9 @@ public class AngelOneClient {
         }
 
         currentWindowStart = currentWindowEnd.plusMinutes(1);
+        if (currentWindowStart.isBefore(expectedCompletedTime)) {
+          rateLimiter.throttleInterChunk();
+        }
       }
       return new ArrayList<>(candleMap.values());
     } else {
@@ -151,8 +151,7 @@ public class AngelOneClient {
       return Collections.emptyList();
     }
 
-    int maxAttempts = MAX_RATE_LIMIT_RETRIES + 1;
-    long currentBackoffMs = INITIAL_BACKOFF_MS;
+    int maxAttempts = rateLimiter.getMaxRateLimitRetries() + 1;
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -192,15 +191,7 @@ public class AngelOneClient {
             String message = root.path("message").asText();
             String errorCode = root.path("errorcode").asText();
             if (isRateLimitError(message, errorCode) && attempt < maxAttempts) {
-              log.warn(
-                  "Angel One rate limit encountered in response (attempt {}/{}): {} (code: {}). Backing off for {} ms...",
-                  attempt,
-                  maxAttempts,
-                  message,
-                  errorCode,
-                  currentBackoffMs);
-              sleepBackoff(currentBackoffMs);
-              currentBackoffMs = (long) (currentBackoffMs * BACKOFF_MULTIPLIER);
+              rateLimiter.applyBackoff(attempt, "getCandleData");
               continue;
             }
             log.warn(
@@ -215,15 +206,7 @@ public class AngelOneClient {
         return Collections.emptyList();
       } catch (HttpStatusCodeException exception) {
         if (isRateLimitException(exception) && attempt < maxAttempts) {
-          log.warn(
-              "Angel One rate limit exceeded (HTTP {}): {} (attempt {}/{}). Backing off for {} ms...",
-              exception.getStatusCode().value(),
-              exception.getMessage(),
-              attempt,
-              maxAttempts,
-              currentBackoffMs);
-          sleepBackoff(currentBackoffMs);
-          currentBackoffMs = (long) (currentBackoffMs * BACKOFF_MULTIPLIER);
+          rateLimiter.applyBackoff(attempt, "getCandleData");
         } else {
           log.warn("Failed to fetch candle data from Angel One: {}", exception.getMessage());
           return Collections.emptyList();
@@ -248,8 +231,7 @@ public class AngelOneClient {
         return Collections.emptyMap();
       }
 
-      int maxAttempts = MAX_RATE_LIMIT_RETRIES + 1;
-      long currentBackoffMs = INITIAL_BACKOFF_MS;
+      int maxAttempts = rateLimiter.getMaxRateLimitRetries() + 1;
 
       for (int attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
@@ -316,14 +298,7 @@ public class AngelOneClient {
               String message = root.path("message").asText();
               String errorCode = root.path("errorcode").asText();
               if (isRateLimitError(message, errorCode) && attempt < maxAttempts) {
-                log.warn(
-                    "Angel One quote rate limit encountered in response (attempt {}/{}): {}. Backing off for {} ms...",
-                    attempt,
-                    maxAttempts,
-                    message,
-                    currentBackoffMs);
-                sleepBackoff(currentBackoffMs);
-                currentBackoffMs = (long) (currentBackoffMs * BACKOFF_MULTIPLIER);
+                rateLimiter.applyBackoff(attempt, "getMarketQuotes");
                 continue;
               }
               if ("AG8001".equalsIgnoreCase(errorCode)) {
@@ -334,15 +309,7 @@ public class AngelOneClient {
           return Collections.emptyMap();
         } catch (HttpStatusCodeException exception) {
           if (isRateLimitException(exception) && attempt < maxAttempts) {
-            log.warn(
-                "Angel One quote rate limit exceeded (HTTP {}): {} (attempt {}/{}). Backing off for {} ms...",
-                exception.getStatusCode().value(),
-                exception.getMessage(),
-                attempt,
-                maxAttempts,
-                currentBackoffMs);
-            sleepBackoff(currentBackoffMs);
-            currentBackoffMs = (long) (currentBackoffMs * BACKOFF_MULTIPLIER);
+            rateLimiter.applyBackoff(attempt, "getMarketQuotes");
           } else {
             log.warn("Failed to fetch quotes from Angel One: {}", exception.getMessage());
             return Collections.emptyMap();
@@ -382,18 +349,6 @@ public class AngelOneClient {
       }
     }
     return "AG8003".equalsIgnoreCase(errorCode);
-  }
-
-  void sleepBackoff(long durationMs) {
-    long effectiveSleep = (config.getDelayMilliseconds() == 0) ? 0 : durationMs;
-    if (effectiveSleep > 0) {
-      try {
-        Thread.sleep(effectiveSleep);
-      } catch (InterruptedException exception) {
-        Thread.currentThread().interrupt();
-        log.warn("Rate limit backoff sleep interrupted: {}", exception.getMessage());
-      }
-    }
   }
 
   OffsetDateTime parseTimestamp(String raw) {

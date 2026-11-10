@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.alphaflow.common.enums.IntradayTimeframe;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
+import com.alphaflow.engine.configs.RateLimiterConfig;
 import com.alphaflow.engine.downloaders.RateLimiter;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneCandle;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneQuote;
@@ -50,7 +51,15 @@ class AngelOneClientTest {
 
     objectMapper = new ObjectMapper();
     AngelOneNetworkHelper networkHelper = new AngelOneNetworkHelper();
-    RateLimiter rateLimiter = new RateLimiter(config);
+    RateLimiterConfig rateLimiterConfig =
+        RateLimiterConfig.builder()
+            .delayMilliseconds(0L)
+            .interChunkDelayMilliseconds(0L)
+            .initialBackoffMs(0L)
+            .jitterRangeMs(1L)
+            .maxRateLimitRetries(3)
+            .build();
+    RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
     client =
         new AngelOneClient(
             config, authManager, objectMapper, networkHelper, rateLimiter, RestClient.builder());
