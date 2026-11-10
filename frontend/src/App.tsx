@@ -141,7 +141,7 @@ function App() {
     return tickers.find((t) => t.symbol === selectedTicker);
   }, [tickers, selectedTicker]);
 
-  const selectedTickerCountry: MarketCountry = selectedTickerObj?.country ?? "IN";
+  const selectedTickerCountry: MarketCountry = "IN";
   const selectedTickerName = selectedTickerObj?.name;
 
   const tickerCountryRef = useRef<MarketCountry>(selectedTickerCountry);

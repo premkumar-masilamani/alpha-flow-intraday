@@ -108,7 +108,7 @@ public class TestIntraday70PBounceNotificationController {
                       new BigDecimal("430.00"),
                       new BigDecimal("220.00")));
         } else {
-          Ticker ticker = Ticker.builder().tickerSymbol("NIFTY50").country(Country.IN).build();
+          Ticker ticker = Ticker.builder().tickerSymbol("NIFTY50").build();
           LocalDate today = now.toLocalDate();
           LocalDate sessionDate =
               MarketTradingCalendar.isTradingDay(today, Country.IN)
@@ -142,7 +142,7 @@ public class TestIntraday70PBounceNotificationController {
                       new BigDecimal("430.00"),
                       new BigDecimal("150.00")));
         } else {
-          Ticker ticker = Ticker.builder().tickerSymbol("NIFTY50").country(Country.IN).build();
+          Ticker ticker = Ticker.builder().tickerSymbol("NIFTY50").build();
           LocalDate today = now.toLocalDate();
           LocalDate sessionDate =
               MarketTradingCalendar.isTradingDay(today, Country.IN)
@@ -154,7 +154,7 @@ public class TestIntraday70PBounceNotificationController {
         }
       }
 
-      Ticker ticker = Ticker.builder().tickerSymbol("NIFTY50").country(Country.IN).build();
+      Ticker ticker = Ticker.builder().tickerSymbol("NIFTY50").build();
       LiveQuote quote =
           LiveQuote.builder()
               .ticker(ticker)

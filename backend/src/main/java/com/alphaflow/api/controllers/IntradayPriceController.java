@@ -6,6 +6,7 @@ import com.alphaflow.api.services.IntradayPriceService;
 import com.alphaflow.api.services.LiveQuoteService;
 import com.alphaflow.api.services.TickerService;
 import com.alphaflow.common.enums.IntradayTimeframe;
+import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.persistence.entities.Ticker;
 import java.time.LocalDate;
 import java.util.List;
@@ -57,7 +58,7 @@ public class IntradayPriceController {
 
     if (timeframe == IntradayTimeframe._15M) {
       LocalDate resolvedEndDate =
-          (endDate != null) ? endDate : LocalDate.now(ticker.getCountry().getZoneId());
+          (endDate != null) ? endDate : LocalDate.now(MarketConfig.IST_ZONE);
       return intradayPriceService.getIntradayPrice(
           ticker, timeframe, resolvedEndDate, page, finalSize);
     } else {

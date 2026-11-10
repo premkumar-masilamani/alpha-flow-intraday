@@ -8,7 +8,6 @@ import com.alphaflow.api.dtos.OhlcvDto;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -18,7 +17,7 @@ class OhlcvMapperTest {
 
   @Test
   void testIntradayPriceMapping() {
-    Ticker ticker = Ticker.builder().tickerSymbol("NIFTY50").country(Country.IN).build();
+    Ticker ticker = Ticker.builder().tickerSymbol("NIFTY50").build();
     OffsetDateTime time =
         LocalDate.of(2026, 9, 23).atTime(9, 15).atZone(MarketConfig.IST_ZONE).toOffsetDateTime();
     IntradayPrice intradayPrice =

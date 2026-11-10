@@ -1,6 +1,6 @@
-INSERT INTO tickers (ticker_symbol, ticker_name, token, scrip_symbol, country, timezone, is_active)
-VALUES ('NIFTY50', 'NIFTY 50', '99926000', 'NIFTY', 'IN', 'Asia/Kolkata', true),
-       ('BANKNIFTY', 'BANK NIFTY', '99926009', 'BANKNIFTY', 'IN', 'Asia/Kolkata', true)
+INSERT INTO tickers (ticker_symbol, ticker_name, token, scrip_symbol, is_active)
+VALUES ('NIFTY50', 'NIFTY 50', '99926000', 'NIFTY', true),
+       ('BANKNIFTY', 'BANK NIFTY', '99926009', 'BANKNIFTY', true)
 ON CONFLICT (ticker_symbol) DO NOTHING;
 
 INSERT INTO market_holidays (country, holiday_date, name)

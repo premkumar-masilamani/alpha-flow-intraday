@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 
 import com.alphaflow.api.dtos.TickerDto;
 import com.alphaflow.api.services.TickerService;
-import com.alphaflow.persistence.enums.Country;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -23,8 +22,6 @@ class TickerControllerTest {
             .name("NIFTY 50")
             .token("99926000")
             .scripSymbol("NIFTY")
-            .timezone("Asia/Kolkata")
-            .country(Country.IN)
             .isActive(true)
             .build();
 
@@ -35,7 +32,7 @@ class TickerControllerTest {
 
     assertEquals(1, res.size());
     assertEquals("NIFTY50", res.getFirst().tickerSymbol());
-    assertEquals(Country.IN, res.getFirst().country());
+    assertEquals("NIFTY 50", res.getFirst().tickerName());
   }
 
   @Test
@@ -49,8 +46,6 @@ class TickerControllerTest {
             .name("NIFTY 50")
             .token("99926000")
             .scripSymbol("NIFTY")
-            .timezone("Asia/Kolkata")
-            .country(Country.IN)
             .isActive(true)
             .build();
 
@@ -61,6 +56,5 @@ class TickerControllerTest {
 
     assertEquals("NIFTY50", res.tickerSymbol());
     assertEquals("NIFTY 50", res.tickerName());
-    assertEquals(Country.IN, res.country());
   }
 }

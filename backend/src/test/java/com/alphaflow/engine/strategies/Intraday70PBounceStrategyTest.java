@@ -66,7 +66,6 @@ class Intraday70PBounceStrategyTest {
         Ticker.builder()
             .tickerId(101L)
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .build();
     baseQuoteTime =
         LocalDate.of(2026, 10, 16)

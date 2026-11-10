@@ -1,10 +1,7 @@
 package com.alphaflow.persistence.entities;
 
-import com.alphaflow.persistence.enums.Country;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,13 +40,6 @@ public class Ticker {
 
   @Column(name = "scrip_symbol", length = 50, nullable = false)
   private String scripSymbol;
-
-  @Enumerated(EnumType.STRING)
-  @Column(name = "country", length = 10, nullable = false)
-  private Country country;
-
-  @Column(name = "timezone", length = 50, nullable = false)
-  private String timezone;
 
   @Column(name = "is_active", nullable = false)
   private Boolean isActive;

@@ -65,14 +65,14 @@ public class AngelOneDownloader {
     int totalNewlyIngestedRows = 0;
     List<Ticker> tickers = new ArrayList<>(latestSavedTimes.keySet());
     for (Ticker ticker : tickers) {
-      ZoneId marketZone = ticker.getCountry().getZoneId();
+      ZoneId marketZone = MarketConfig.IST_ZONE;
       OffsetDateTime expectedCompletedTime =
           MarketTradingCalendar.getExpectedLatestCompletedCandleTime(
               ZonedDateTime.now(marketZone),
               config.getSessionStartTime(),
               config.getSessionEndTime(),
               15,
-              ticker.getCountry());
+              Country.IN);
 
       OffsetDateTime latestSavedTime = latestSavedTimes.get(ticker);
       if (latestSavedTime == null || latestSavedTime.isBefore(expectedCompletedTime)) {
@@ -104,7 +104,7 @@ public class AngelOneDownloader {
           config
               .getBackfillStartDate()
               .atTime(config.getSessionStartTime())
-              .atZone(ticker.getCountry().getZoneId())
+              .atZone(MarketConfig.IST_ZONE)
               .toOffsetDateTime();
     }
 
@@ -170,7 +170,7 @@ public class AngelOneDownloader {
   public List<LiveQuote> downloadLiveQuotes(OffsetDateTime currentTimestamp) {
     log.info("Starting Angel One live quote download process...");
     List<Ticker> activeTickers =
-        tickerRepository.findByIsActiveTrueAndCountry(Country.IN);
+        tickerRepository.findByIsActiveTrue();
     List<LiveQuote> savedQuotes = new ArrayList<>();
     for (Ticker ticker : activeTickers) {
       Optional<LiveQuote> liveQuoteOptional =

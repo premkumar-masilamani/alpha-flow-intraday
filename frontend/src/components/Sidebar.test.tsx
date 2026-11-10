@@ -5,14 +5,11 @@ import type { Ticker } from '../services/api';
 
 describe('Sidebar Component', () => {
     const mockTickers: Ticker[] = [
-        { id: 1, symbol: '^GSPC', name: 'S&P 500', type: 'INDEX', country: 'US' },
-        { id: 2, symbol: '^NSEI', name: 'NIFTY 50', type: 'INDEX', country: 'IN' },
-        { id: 3, symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', country: 'US' },
-        { id: 4, symbol: 'MSFT', name: 'Microsoft Corporation', type: 'STOCK', country: 'US' },
-        { id: 5, symbol: 'TSLA', name: 'Tesla Inc.' }
+        { id: 1, symbol: 'NIFTY50', name: 'NIFTY 50' },
+        { id: 2, symbol: 'BANKNIFTY', name: 'BANK NIFTY' },
     ];
 
-    it('renders sections with "country - ticker_type" headers, indices first followed by stocks', () => {
+    it('renders a simple flat list of tickers without category headers', () => {
         render(
             <Sidebar
                 tickers={mockTickers}
@@ -21,77 +18,50 @@ describe('Sidebar Component', () => {
             />
         );
 
-        const inIndexHeading = screen.getByText('IN - INDEX');
-        const usIndexHeading = screen.getByText('US - INDEX');
-        const usStockHeading = screen.getByText('US - STOCK');
+        // Header
+        expect(screen.getByText('Tickers')).toBeInTheDocument();
 
-        expect(inIndexHeading).toBeInTheDocument();
-        expect(usIndexHeading).toBeInTheDocument();
-        expect(usStockHeading).toBeInTheDocument();
+        // No accordion/category headers
+        expect(screen.queryByText(/IN - STOCK/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/IN - INDEX/i)).not.toBeInTheDocument();
 
-        // Verify order: INDEX sections appear before STOCK sections in DOM
-        const headings = screen.getAllByRole('button', { name: /(IN|US) - (INDEX|STOCK)/i });
-        expect(headings[0]).toHaveTextContent('IN - INDEX');
-        expect(headings[1]).toHaveTextContent('US - INDEX');
-        expect(headings[2]).toHaveTextContent('US - STOCK');
-
-        // Verify all tickers are rendered
+        // All tickers directly visible
         mockTickers.forEach((ticker) => {
             expect(screen.getByText(ticker.symbol)).toBeInTheDocument();
             expect(screen.getByText(ticker.name)).toBeInTheDocument();
         });
-
-        // Verify count badges
-        expect(screen.getAllByText('1')).toHaveLength(2); // IN - INDEX (1) and US - INDEX (1)
-        expect(screen.getByText('3')).toBeInTheDocument(); // US - STOCK (3 tickers)
     });
 
-    it('collapses and expands sections when header is clicked', () => {
+    it('renders "None available" when ticker list is empty', () => {
         render(
             <Sidebar
-                tickers={mockTickers}
+                tickers={[]}
                 selectedTicker={null}
                 onSelectTicker={vi.fn()}
             />
         );
 
-        // Initially expanded
-        expect(screen.getByText('^NSEI')).toBeInTheDocument();
-
-        // Click IN - INDEX header button to collapse
-        const inIndexButton = screen.getByRole('button', { name: /IN - INDEX/i });
-        fireEvent.click(inIndexButton);
-
-        // NIFTY 50 should now be hidden
-        expect(screen.queryByText('^NSEI')).not.toBeInTheDocument();
-
-        // Other sections should still be visible
-        expect(screen.getByText('^GSPC')).toBeInTheDocument();
-        expect(screen.getByText('AAPL')).toBeInTheDocument();
-
-        // Click again to expand
-        fireEvent.click(inIndexButton);
-        expect(screen.getByText('^NSEI')).toBeInTheDocument();
+        expect(screen.getByText('None available')).toBeInTheDocument();
     });
 
     it('applies selected classes to the active ticker', () => {
         render(
             <Sidebar
                 tickers={mockTickers}
-                selectedTicker="AAPL"
+                selectedTicker="NIFTY50"
                 onSelectTicker={vi.fn()}
             />
         );
 
-        const aaplButton = screen.getByText('AAPL').closest('button');
-        const msftButton = screen.getByText('MSFT').closest('button');
+        const niftyButton = screen.getByText('NIFTY50').closest('button');
+        const bankNiftyButton = screen.getByText('BANKNIFTY').closest('button');
 
-        expect(aaplButton).toHaveClass('bg-slate-700', 'text-white', 'border-l-4', 'border-blue-500');
-        expect(msftButton).not.toHaveClass('bg-slate-700', 'text-white', 'border-l-4', 'border-blue-500');
-        expect(msftButton).toHaveClass('pl-5');
+        expect(niftyButton).toHaveClass('bg-slate-700', 'text-white', 'border-l-4', 'border-blue-500');
+        expect(bankNiftyButton).not.toHaveClass('bg-slate-700', 'text-white', 'border-l-4', 'border-blue-500');
+        expect(bankNiftyButton).toHaveClass('pl-5');
     });
 
-    it('calls onSelectTicker when an index or stock ticker is clicked', () => {
+    it('calls onSelectTicker when a ticker is clicked', () => {
         const handleSelectTicker = vi.fn();
         render(
             <Sidebar
@@ -101,14 +71,9 @@ describe('Sidebar Component', () => {
             />
         );
 
-        const nseiButton = screen.getByText('^NSEI').closest('button');
-        expect(nseiButton).toBeInTheDocument();
-        fireEvent.click(nseiButton!);
-        expect(handleSelectTicker).toHaveBeenCalledWith('^NSEI');
-
-        const aaplButton = screen.getByText('AAPL').closest('button');
-        expect(aaplButton).toBeInTheDocument();
-        fireEvent.click(aaplButton!);
-        expect(handleSelectTicker).toHaveBeenCalledWith('AAPL');
+        const bankNiftyButton = screen.getByText('BANKNIFTY').closest('button');
+        expect(bankNiftyButton).toBeInTheDocument();
+        fireEvent.click(bankNiftyButton!);
+        expect(handleSelectTicker).toHaveBeenCalledWith('BANKNIFTY');
     });
 });

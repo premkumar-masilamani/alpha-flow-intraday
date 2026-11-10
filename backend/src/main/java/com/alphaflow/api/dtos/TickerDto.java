@@ -1,6 +1,5 @@
 package com.alphaflow.api.dtos;
 
-import com.alphaflow.persistence.enums.Country;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
@@ -11,8 +10,6 @@ public record TickerDto(
     @JsonProperty("name") String name,
     @JsonProperty("token") String token,
     @JsonProperty("scripSymbol") String scripSymbol,
-    @JsonProperty("timezone") String timezone,
-    @JsonProperty("country") Country country,
     @JsonProperty("isActive") Boolean isActive) {
 
   public Long tickerId() {

@@ -15,8 +15,6 @@ public class TickerMapper {
         .name(ticker.getTickerName())
         .token(ticker.getToken())
         .scripSymbol(ticker.getScripSymbol())
-        .timezone(ticker.getTimezone())
-        .country(ticker.getCountry())
         .isActive(ticker.getIsActive())
         .build();
   }

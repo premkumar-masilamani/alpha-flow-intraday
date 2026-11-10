@@ -14,6 +14,7 @@ import com.alphaflow.engine.strategies.options.enums.OptionType;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
+import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.IntradayPriceRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -93,9 +94,9 @@ public class Intraday70PBounceStrategy {
 
   private Optional<PriceBar> fetchPreviousTradingDayData(Ticker ticker, LocalDate sessionDate) {
     LocalDate previousTradingDate =
-        MarketTradingCalendar.getPreviousTradingDay(sessionDate, ticker.getCountry());
+        MarketTradingCalendar.getPreviousTradingDay(sessionDate, Country.IN);
 
-    ZoneId zoneId = ticker.getCountry().getZoneId();
+    ZoneId zoneId = MarketConfig.IST_ZONE;
     OffsetDateTime startOfDay = previousTradingDate.atStartOfDay(zoneId).toOffsetDateTime();
     OffsetDateTime endOfDay =
         previousTradingDate.atTime(LocalTime.MAX).atZone(zoneId).toOffsetDateTime();

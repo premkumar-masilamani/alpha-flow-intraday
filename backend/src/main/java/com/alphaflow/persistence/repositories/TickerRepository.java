@@ -1,7 +1,6 @@
 package com.alphaflow.persistence.repositories;
 
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +12,4 @@ public interface TickerRepository extends JpaRepository<Ticker, Long> {
   Optional<Ticker> findByTickerSymbolIgnoreCase(String symbol);
 
   List<Ticker> findByIsActiveTrue();
-
-  List<Ticker> findByIsActiveTrueAndCountry(Country country);
 }

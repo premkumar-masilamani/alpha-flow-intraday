@@ -52,7 +52,6 @@ class IntradaySchedulerTest {
         Ticker.builder()
             .tickerId(1L)
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .isActive(true)
             .build();

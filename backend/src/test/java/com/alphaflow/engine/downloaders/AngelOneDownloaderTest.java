@@ -85,7 +85,6 @@ class AngelOneDownloaderTest {
     Ticker ticker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .build();
 
@@ -106,7 +105,6 @@ class AngelOneDownloaderTest {
     Ticker ticker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .build();
 
@@ -170,7 +168,6 @@ class AngelOneDownloaderTest {
     Ticker ticker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .build();
 
@@ -231,7 +228,6 @@ class AngelOneDownloaderTest {
     Ticker ticker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .build();
 
@@ -283,7 +279,6 @@ class AngelOneDownloaderTest {
     Ticker ticker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .build();
 
@@ -313,7 +308,6 @@ class AngelOneDownloaderTest {
     Ticker ticker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .build();
 
@@ -354,7 +348,6 @@ class AngelOneDownloaderTest {
         Ticker.builder()
             .tickerId(1L)
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .isActive(true)
             .build();
@@ -362,7 +355,6 @@ class AngelOneDownloaderTest {
         Ticker.builder()
             .tickerId(2L)
             .tickerSymbol("BANKNIFTY")
-            .country(Country.IN)
             .token("BANKNIFTY")
             .scripSymbol("BANKNIFTY")
             .isActive(true)
@@ -370,7 +362,7 @@ class AngelOneDownloaderTest {
 
     OffsetDateTime currentTimestamp = OffsetDateTime.now(MarketConfig.IST_ZONE);
 
-    when(tickerRepo.findByIsActiveTrueAndCountry(Country.IN))
+    when(tickerRepo.findByIsActiveTrue())
         .thenReturn(List.of(activeTicker1, activeTicker2));
 
     when(client.getMarketQuotes(MarketConfig.EXCHANGE_NSE, List.of("99926000")))
@@ -401,7 +393,6 @@ class AngelOneDownloaderTest {
         Ticker.builder()
             .tickerId(1L)
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .isActive(true)
             .build();
@@ -440,7 +431,6 @@ class AngelOneDownloaderTest {
         Ticker.builder()
             .tickerId(1L)
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000").scripSymbol("NIFTY")
             .isActive(true)
             .build();

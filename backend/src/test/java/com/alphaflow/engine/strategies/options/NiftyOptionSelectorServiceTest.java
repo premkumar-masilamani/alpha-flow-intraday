@@ -15,7 +15,6 @@ import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneQuote;
 import com.alphaflow.engine.strategies.options.dtos.RecommendedOptionDto;
 import com.alphaflow.engine.strategies.options.enums.OptionType;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -40,7 +39,7 @@ class NiftyOptionSelectorServiceTest {
     angelOneClient = mock(AngelOneClient.class);
     service = new NiftyOptionSelectorService(scripMasterManager, angelOneClient);
 
-    niftyTicker = Ticker.builder().tickerSymbol("NIFTY50").country(Country.IN).build();
+    niftyTicker = Ticker.builder().tickerSymbol("NIFTY50").build();
     sessionDate = LocalDate.of(2026, 10, 16); // Friday (Trading Day)
   }
 
@@ -157,7 +156,7 @@ class NiftyOptionSelectorServiceTest {
 
   @Test
   void testSkipOnNonNiftyTicker() {
-    Ticker reliance = Ticker.builder().tickerSymbol("RELIANCE.NS").country(Country.IN).build();
+    Ticker reliance = Ticker.builder().tickerSymbol("RELIANCE.NS").build();
     Optional<RecommendedOptionDto> result =
         service.selectBestOption(reliance, new BigDecimal("2500"), OptionType.PUT, sessionDate);
     assertTrue(result.isEmpty());
@@ -288,7 +287,7 @@ class NiftyOptionSelectorServiceTest {
 
   @Test
   void testNullTickerSymbol() {
-    Ticker nullSymbolTicker = Ticker.builder().tickerSymbol(null).country(Country.IN).build();
+    Ticker nullSymbolTicker = Ticker.builder().tickerSymbol(null).build();
     Optional<RecommendedOptionDto> result =
         service.selectBestOption(nullSymbolTicker, new BigDecimal("25000"), OptionType.CALL, sessionDate);
     assertTrue(result.isEmpty());

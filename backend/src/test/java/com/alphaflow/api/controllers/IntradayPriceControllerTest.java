@@ -13,8 +13,8 @@ import com.alphaflow.api.services.LiveQuoteService;
 import com.alphaflow.api.services.TickerService;
 import com.alphaflow.common.enums.IntradayTimeframe;
 import com.alphaflow.common.exceptions.ResourceNotFoundException;
+import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -31,7 +31,7 @@ class IntradayPriceControllerTest {
     TickerService tickerService = mock(TickerService.class);
 
     Ticker ticker =
-        Ticker.builder().tickerSymbol("NIFTY50").country(Country.IN).isActive(true).build();
+        Ticker.builder().tickerSymbol("NIFTY50").isActive(true).build();
     when(tickerService.getTicker("NIFTY50")).thenReturn(ticker);
 
     OffsetDateTime candleTime =
@@ -46,7 +46,7 @@ class IntradayPriceControllerTest {
             new BigDecimal("1000.00"));
 
     LocalDate explicitEndDate = LocalDate.of(2026, 9, 23);
-    LocalDate todayInMarket = LocalDate.now(ticker.getCountry().getZoneId());
+    LocalDate todayInMarket = LocalDate.now(MarketConfig.IST_ZONE);
 
     when(intradayPriceService.getIntradayPrice(
             ticker, IntradayTimeframe._15M, todayInMarket, 0, 250))
@@ -90,10 +90,10 @@ class IntradayPriceControllerTest {
     TickerService tickerService = mock(TickerService.class);
 
     Ticker ticker =
-        Ticker.builder().tickerSymbol("NIFTY50").country(Country.IN).isActive(true).build();
+        Ticker.builder().tickerSymbol("NIFTY50").isActive(true).build();
     when(tickerService.getTicker("NIFTY50")).thenReturn(ticker);
 
-    LocalDate todayInMarket = LocalDate.now(ticker.getCountry().getZoneId());
+    LocalDate todayInMarket = LocalDate.now(MarketConfig.IST_ZONE);
 
     when(intradayPriceService.getIntradayPrice(
             eq(ticker), eq(IntradayTimeframe._15M), eq(todayInMarket), eq(0), eq(1000)))
@@ -121,7 +121,7 @@ class IntradayPriceControllerTest {
     TickerService tickerService = mock(TickerService.class);
 
     Ticker ticker =
-        Ticker.builder().tickerSymbol("NIFTY50").country(Country.IN).isActive(true).build();
+        Ticker.builder().tickerSymbol("NIFTY50").isActive(true).build();
     when(tickerService.getTicker("NIFTY50")).thenReturn(ticker);
 
     IntradayPriceController controller =

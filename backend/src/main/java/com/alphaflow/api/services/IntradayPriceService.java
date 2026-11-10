@@ -5,10 +5,12 @@ import com.alphaflow.api.mappers.OhlcvMapper;
 import com.alphaflow.common.enums.IntradayTimeframe;
 import com.alphaflow.engine.calendar.MarketTradingCalendar;
 import com.alphaflow.engine.configs.AngelOneConfig;
+import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.AngelOneDownloader;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
+import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.IntradayPriceRepository;
 import com.alphaflow.persistence.repositories.LiveQuoteRepository;
 import java.math.BigDecimal;
@@ -49,7 +51,7 @@ public class IntradayPriceService {
 
   public List<OhlcvDto> getIntradayPrice(
       Ticker ticker, IntradayTimeframe timeframe, LocalDate endDate, int page, int size) {
-    ZoneId marketZone = ticker.getCountry().getZoneId();
+    ZoneId marketZone = MarketConfig.IST_ZONE;
     OffsetDateTime endDateTime =
         endDate.atTime(LocalTime.MAX).atZone(marketZone).toOffsetDateTime();
     List<IntradayPrice> persistedPrices =
@@ -63,7 +65,7 @@ public class IntradayPriceService {
               angelOneConfig.getSessionStartTime(),
               angelOneConfig.getSessionEndTime(),
               15,
-              ticker.getCountry());
+              Country.IN);
 
       if (!persistedPrices.isEmpty()
           && !persistedPrices.getFirst().getPriceTime().isBefore(expectedCompletedTime)) {

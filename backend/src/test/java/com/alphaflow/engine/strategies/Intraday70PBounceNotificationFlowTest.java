@@ -17,7 +17,6 @@ import com.alphaflow.engine.strategies.options.enums.OptionType;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.IntradayPriceRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -60,7 +59,6 @@ class Intraday70PBounceNotificationFlowTest {
             .tickerSymbol("NIFTY50")
             .token("99926000")
             .scripSymbol("NIFTY")
-            .country(Country.IN)
             .build();
     quoteTime = OffsetDateTime.now(MarketConfig.IST_ZONE);
   }

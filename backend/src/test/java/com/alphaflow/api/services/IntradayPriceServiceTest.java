@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.alphaflow.api.dtos.OhlcvDto;
 import com.alphaflow.common.enums.IntradayTimeframe;
 import com.alphaflow.engine.configs.AngelOneConfig;
+import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.AngelOneDownloader;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.LiveQuote;
@@ -58,14 +59,13 @@ class IntradayPriceServiceTest {
     ticker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000")
             .scripSymbol("NIFTY")
             .isActive(true)
             .build();
     testDate = LocalDate.of(2026, 9, 23);
     endDateTime =
-        testDate.atTime(LocalTime.MAX).atZone(ticker.getCountry().getZoneId()).toOffsetDateTime();
+        testDate.atTime(LocalTime.MAX).atZone(MarketConfig.IST_ZONE).toOffsetDateTime();
   }
 
   @Test
@@ -303,7 +303,6 @@ class IntradayPriceServiceTest {
     Ticker angelOneTicker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000")
             .scripSymbol("NIFTY")
             .isActive(true)
@@ -342,7 +341,6 @@ class IntradayPriceServiceTest {
     Ticker angelOneTicker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000")
             .scripSymbol("NIFTY")
             .isActive(true)
@@ -394,7 +392,6 @@ class IntradayPriceServiceTest {
     Ticker angelOneTicker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000")
             .scripSymbol("NIFTY")
             .isActive(true)
@@ -432,7 +429,6 @@ class IntradayPriceServiceTest {
     Ticker angelOneTicker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000")
             .scripSymbol("NIFTY")
             .isActive(true)
@@ -459,7 +455,6 @@ class IntradayPriceServiceTest {
     Ticker angelOneTicker =
         Ticker.builder()
             .tickerSymbol("NIFTY50")
-            .country(Country.IN)
             .token("99926000")
             .scripSymbol("NIFTY")
             .isActive(true)
