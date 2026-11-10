@@ -1,7 +1,7 @@
 package com.alphaflow.api.services;
 
 import com.alphaflow.api.dtos.MarketHolidayDto;
-import com.alphaflow.api.mappers.MarketHolidayMapper;
+import com.alphaflow.common.mappers.MarketHolidayMapper;
 import com.alphaflow.persistence.entities.MarketHoliday;
 import com.alphaflow.persistence.repositories.MarketHolidayRepository;
 import java.util.List;

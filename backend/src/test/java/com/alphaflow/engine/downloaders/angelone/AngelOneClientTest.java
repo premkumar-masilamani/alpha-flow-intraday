@@ -3,7 +3,7 @@ package com.alphaflow.engine.downloaders.angelone;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.alphaflow.common.enums.IntradayTimeframe;
+import com.alphaflow.common.enums.Timeframe;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.configs.RateLimiterConfig;
@@ -108,7 +108,7 @@ class AngelOneClientTest {
         client.getCandleData(
             MarketConfig.EXCHANGE_NSE,
             "99926000",
-            IntradayTimeframe._15M,
+            Timeframe._15M,
             "2026-09-23 09:15",
             "2026-09-23 15:30");
 
@@ -128,7 +128,7 @@ class AngelOneClientTest {
         client.getCandleData(
             MarketConfig.EXCHANGE_NSE,
             "99926000",
-            IntradayTimeframe._15M,
+            Timeframe._15M,
             "2026-09-23 09:15",
             "2026-09-23 15:30");
     assertTrue(candles.isEmpty());
@@ -160,7 +160,7 @@ class AngelOneClientTest {
         client.getCandleData(
             MarketConfig.EXCHANGE_NSE,
             "99926000",
-            IntradayTimeframe._15M,
+            Timeframe._15M,
             "2026-09-23 09:15",
             "2026-09-23 15:30");
 
@@ -177,7 +177,7 @@ class AngelOneClientTest {
 
   @Test
   void testMapToAngelOneInterval() {
-    assertEquals("FIFTEEN_MINUTE", AngelOneClient.mapToAngelOneInterval(IntradayTimeframe._15M));
+    assertEquals("FIFTEEN_MINUTE", AngelOneClient.mapToAngelOneInterval(Timeframe._15M));
     assertEquals("", AngelOneClient.mapToAngelOneInterval(null));
   }
 
@@ -432,7 +432,7 @@ class AngelOneClientTest {
         client.getCandleData(
             MarketConfig.EXCHANGE_NSE,
             "99926000",
-            IntradayTimeframe._15M,
+            Timeframe._15M,
             "2026-09-23 09:15",
             "2026-09-23 15:30");
 
@@ -466,7 +466,7 @@ class AngelOneClientTest {
         client.getCandleData(
             MarketConfig.EXCHANGE_NSE,
             "99926000",
-            IntradayTimeframe._15M,
+            Timeframe._15M,
             "2026-09-23 09:15",
             "2026-09-23 15:30");
 
@@ -520,7 +520,7 @@ class AngelOneClientTest {
         client.getCandleData(
             MarketConfig.EXCHANGE_NSE,
             "99926000",
-            IntradayTimeframe._15M,
+            Timeframe._15M,
             "2026-09-23 09:15",
             "2026-09-23 15:30");
 

@@ -5,7 +5,7 @@ import com.alphaflow.api.dtos.QuoteDto;
 import com.alphaflow.api.services.IntradayPriceService;
 import com.alphaflow.api.services.LiveQuoteService;
 import com.alphaflow.api.services.TickerService;
-import com.alphaflow.common.enums.IntradayTimeframe;
+import com.alphaflow.common.enums.Timeframe;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.persistence.entities.Ticker;
 import java.time.LocalDate;
@@ -39,7 +39,7 @@ public class IntradayPriceController {
   @GetMapping("/tickers/{symbol}/candle")
   public List<OhlcvDto> getIntradayPriceDataForTicker(
       @PathVariable String symbol,
-      @RequestParam(defaultValue = "15M") IntradayTimeframe timeframe,
+      @RequestParam(defaultValue = "15M") Timeframe timeframe,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "250") int size,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -56,7 +56,7 @@ public class IntradayPriceController {
 
     Ticker ticker = tickerService.getTicker(symbol);
 
-    if (timeframe == IntradayTimeframe._15M) {
+    if (timeframe == Timeframe._15M) {
       LocalDate resolvedEndDate =
           (endDate != null) ? endDate : LocalDate.now(MarketConfig.IST_ZONE);
       return intradayPriceService.getIntradayPrice(

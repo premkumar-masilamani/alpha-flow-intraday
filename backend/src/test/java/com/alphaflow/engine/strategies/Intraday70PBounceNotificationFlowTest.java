@@ -9,8 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.alphaflow.engine.configs.MarketConfig;
-import com.alphaflow.engine.services.NotificationService;
 import com.alphaflow.engine.services.NotificationTemplateEngine;
+import com.alphaflow.engine.services.TelegramNotificationService;
 import com.alphaflow.engine.strategies.options.NiftyOptionSelectorService;
 import com.alphaflow.engine.strategies.options.dtos.RecommendedOptionDto;
 import com.alphaflow.engine.strategies.options.enums.OptionType;
@@ -34,7 +34,7 @@ import org.mockito.ArgumentCaptor;
 class Intraday70PBounceNotificationFlowTest {
 
   private IntradayPriceRepository intradayPriceRepository;
-  private NotificationService notificationService;
+  private TelegramNotificationService notificationService;
   private NiftyOptionSelectorService niftyOptionSelectorService;
   private Intraday70PBounceStrategy strategy;
   private Ticker niftyTicker;
@@ -43,7 +43,7 @@ class Intraday70PBounceNotificationFlowTest {
   @BeforeEach
   void setUp() {
     intradayPriceRepository = mock(IntradayPriceRepository.class);
-    notificationService = mock(NotificationService.class);
+    notificationService = mock(TelegramNotificationService.class);
     niftyOptionSelectorService = mock(NiftyOptionSelectorService.class);
     NotificationTemplateEngine notificationTemplateEngine = new NotificationTemplateEngine();
     strategy =

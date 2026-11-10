@@ -9,13 +9,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.downloaders.AngelOneDownloader;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.alphaflow.engine.strategies.Intraday70PBounceStrategy;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -39,7 +38,7 @@ class IntradaySchedulerTest {
 
   @BeforeEach
   void setUp() {
-    MarketTradingCalendar.clearHolidays();
+    TradingCalendarService.clearHolidays();
     config = new AngelOneConfig();
     config.setSessionStartTime(LocalTime.MIN);
     config.setSessionEndTime(LocalTime.MAX);
@@ -67,7 +66,7 @@ class IntradaySchedulerTest {
 
   @AfterEach
   void tearDown() {
-    MarketTradingCalendar.clearHolidays();
+    TradingCalendarService.clearHolidays();
   }
 
   @Test
@@ -137,7 +136,7 @@ class IntradaySchedulerTest {
 
   @Test
   void testMarketSessionClosedSkipsLiveQuoteUpdate() {
-    MarketTradingCalendar.setHolidays(Country.IN, Map.of(LocalDate.now(), "Test Holiday"));
+    TradingCalendarService.setHolidays(Map.of(LocalDate.now(), "Test Holiday"));
 
     scheduler.runLiveQuoteUpdate();
 

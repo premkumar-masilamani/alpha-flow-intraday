@@ -1,17 +1,16 @@
 package com.alphaflow.engine.downloaders;
 
-import com.alphaflow.common.enums.IntradayTimeframe;
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
+import com.alphaflow.common.enums.Timeframe;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.angelone.AngelOneClient;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneCandle;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneQuote;
-import com.alphaflow.engine.schedulers.SchedulerUtils;
+import com.alphaflow.engine.services.TradingCalendarService;
+import com.alphaflow.engine.utils.SchedulerUtils;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.IntradayPriceRepository;
 import com.alphaflow.persistence.repositories.LiveQuoteRepository;
 import com.alphaflow.persistence.repositories.TickerRepository;
@@ -58,7 +57,7 @@ public class AngelOneDownloader {
 
     Map<Ticker, OffsetDateTime> latestSavedTimes =
         intradayPriceRepository.findLatestPriceTimesForActiveTickers(
-            IntradayTimeframe._15M.getValue());
+            Timeframe._15M.getValue());
 
     log.info("Found {} active Angel One tickers to sync.", latestSavedTimes.size());
 
@@ -67,12 +66,11 @@ public class AngelOneDownloader {
     for (Ticker ticker : tickers) {
       ZoneId marketZone = MarketConfig.IST_ZONE;
       OffsetDateTime expectedCompletedTime =
-          MarketTradingCalendar.getExpectedLatestCompletedCandleTime(
+          TradingCalendarService.getExpectedLatestCompletedCandleTime(
               ZonedDateTime.now(marketZone),
               config.getSessionStartTime(),
               config.getSessionEndTime(),
-              15,
-              Country.IN);
+              15);
 
       OffsetDateTime latestSavedTime = latestSavedTimes.get(ticker);
       if (latestSavedTime == null || latestSavedTime.isBefore(expectedCompletedTime)) {
@@ -130,7 +128,7 @@ public class AngelOneDownloader {
               candle.timestamp(),
               IntradayPrice.builder()
                   .ticker(ticker)
-                  .timeframe(IntradayTimeframe._15M.getValue())
+                  .timeframe(Timeframe._15M.getValue())
                   .priceTime(candle.timestamp())
                   .priceOpen(candle.open())
                   .priceHigh(candle.high())

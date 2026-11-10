@@ -1,12 +1,12 @@
 package com.alphaflow.engine.schedulers;
 
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.AngelOneDownloader;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.alphaflow.engine.strategies.Intraday70PBounceStrategy;
+import com.alphaflow.engine.utils.SchedulerUtils;
 import com.alphaflow.persistence.entities.LiveQuote;
-import com.alphaflow.persistence.enums.Country;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,11 +80,10 @@ public class IntradayScheduler {
 
   public void runLiveQuoteUpdate() {
     ZonedDateTime currentMarketTime = ZonedDateTime.now(MarketConfig.IST_ZONE);
-    if (MarketTradingCalendar.isMarketSessionOpen(
+    if (TradingCalendarService.isMarketSessionOpen(
         currentMarketTime,
         angelOneConfig.getSessionStartTime(),
-        angelOneConfig.getSessionEndTime(),
-        Country.IN)) {
+        angelOneConfig.getSessionEndTime())) {
       if (liveQuoteRunning.compareAndSet(false, true)) {
         log.info("Starting scheduled Angel One 1-minute live quote update...");
         long cycleStart = System.currentTimeMillis();

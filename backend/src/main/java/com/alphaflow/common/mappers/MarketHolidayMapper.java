@@ -1,4 +1,4 @@
-package com.alphaflow.api.mappers;
+package com.alphaflow.common.mappers;
 
 import com.alphaflow.api.dtos.MarketHolidayDto;
 import com.alphaflow.persistence.entities.MarketHoliday;

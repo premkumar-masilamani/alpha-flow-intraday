@@ -1,10 +1,10 @@
 package com.alphaflow.api.services;
 
 import com.alphaflow.api.dtos.QuoteDto;
+import com.alphaflow.common.mappers.QuoteMapper;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
 import com.alphaflow.persistence.repositories.LiveQuoteRepository;
-import java.math.BigDecimal;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,27 +24,10 @@ public class LiveQuoteService {
   public QuoteDto getQuote(Ticker ticker) {
     Optional<LiveQuote> liveQuoteOptional = liveQuoteRepository.findByTicker(ticker);
     if (liveQuoteOptional.isPresent()) {
-      LiveQuote liveQuote = liveQuoteOptional.get();
-      return QuoteDto.builder()
-          .currentPrice(liveQuote.getLastPrice())
-          .open(liveQuote.getOpen())
-          .high(liveQuote.getHigh())
-          .low(liveQuote.getLow())
-          .close(liveQuote.getClose())
-          .changePercent(liveQuote.getChangePercent())
-          .timestamp(liveQuote.getQuoteTime().toString())
-          .build();
+      return QuoteMapper.toDto(liveQuoteOptional.get());
     } else {
       log.debug("No live quote found in database for ticker: {}", ticker.getTickerSymbol());
-      return QuoteDto.builder()
-          .currentPrice(BigDecimal.ZERO)
-          .open(BigDecimal.ZERO)
-          .high(BigDecimal.ZERO)
-          .low(BigDecimal.ZERO)
-          .close(BigDecimal.ZERO)
-          .changePercent(BigDecimal.ZERO)
-          .timestamp("")
-          .build();
+      return QuoteMapper.defaultZeroDto();
     }
   }
 }

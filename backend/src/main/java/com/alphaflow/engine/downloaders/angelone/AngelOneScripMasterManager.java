@@ -1,10 +1,9 @@
 package com.alphaflow.engine.downloaders.angelone;
 
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.angelone.dtos.AngelOneInstrument;
-import com.alphaflow.persistence.enums.Country;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,7 +54,7 @@ public class AngelOneScripMasterManager {
   }
 
   public List<AngelOneInstrument> getNfoOptions(String underlyingName, LocalDate sessionDate) {
-    if (MarketTradingCalendar.isTradingDay(sessionDate, Country.IN)) {
+    if (TradingCalendarService.isTradingDay(sessionDate)) {
       if (!sessionDate.equals(cachedSessionDate)) {
         refreshCache(sessionDate);
       }

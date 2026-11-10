@@ -15,17 +15,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.alphaflow.common.exceptions.NotificationException;
-import com.alphaflow.engine.calendar.MarketTradingCalendar;
 import com.alphaflow.engine.configs.MarketConfig;
-import com.alphaflow.engine.services.NotificationService;
 import com.alphaflow.engine.services.NotificationTemplateEngine;
+import com.alphaflow.engine.services.TelegramNotificationService;
+import com.alphaflow.engine.services.TradingCalendarService;
 import com.alphaflow.engine.strategies.options.NiftyOptionSelectorService;
 import com.alphaflow.engine.strategies.options.dtos.RecommendedOptionDto;
 import com.alphaflow.engine.strategies.options.enums.OptionType;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.IntradayPriceRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -43,7 +42,7 @@ import org.springframework.data.domain.PageRequest;
 class Intraday70PBounceStrategyTest {
 
   private IntradayPriceRepository intradayPriceRepository;
-  private NotificationService notificationService;
+  private TelegramNotificationService notificationService;
   private NiftyOptionSelectorService niftyOptionSelectorService;
   private Intraday70PBounceStrategy strategy;
   private Ticker ticker;
@@ -52,7 +51,7 @@ class Intraday70PBounceStrategyTest {
   @BeforeEach
   void setUp() {
     intradayPriceRepository = mock(IntradayPriceRepository.class);
-    notificationService = mock(NotificationService.class);
+    notificationService = mock(TelegramNotificationService.class);
     niftyOptionSelectorService = mock(NiftyOptionSelectorService.class);
     NotificationTemplateEngine notificationTemplateEngine = new NotificationTemplateEngine();
     strategy =
@@ -76,7 +75,7 @@ class Intraday70PBounceStrategyTest {
 
   @AfterEach
   void tearDown() {
-    MarketTradingCalendar.clearHolidays();
+    TradingCalendarService.clearHolidays();
   }
 
   private IntradayPrice createPreviousDayIntradayPrice(
@@ -393,8 +392,8 @@ class Intraday70PBounceStrategyTest {
   @Test
   void testHolidayBeforeSession_ResolvesPriorActiveTradingDay() {
     // If Friday 2026-10-16 was a holiday, Monday 2026-10-19 resolves to Thursday 2026-10-15
-    MarketTradingCalendar.setHolidays(
-        Country.IN, Map.of(LocalDate.of(2026, 10, 16), "Test Holiday"));
+    TradingCalendarService.setHolidays(
+        Map.of(LocalDate.of(2026, 10, 16), "Test Holiday"));
 
     OffsetDateTime mondayTime =
         LocalDate.of(2026, 10, 19)

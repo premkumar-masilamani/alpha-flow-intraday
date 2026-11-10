@@ -11,14 +11,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.alphaflow.api.dtos.OhlcvDto;
-import com.alphaflow.common.enums.IntradayTimeframe;
+import com.alphaflow.common.enums.Timeframe;
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.configs.MarketConfig;
 import com.alphaflow.engine.downloaders.AngelOneDownloader;
 import com.alphaflow.persistence.entities.IntradayPrice;
 import com.alphaflow.persistence.entities.LiveQuote;
 import com.alphaflow.persistence.entities.Ticker;
-import com.alphaflow.persistence.enums.Country;
 import com.alphaflow.persistence.repositories.IntradayPriceRepository;
 import com.alphaflow.persistence.repositories.LiveQuoteRepository;
 import java.math.BigDecimal;
@@ -98,12 +97,12 @@ class IntradayPriceServiceTest {
             .build();
 
     when(intradayPriceRepository.findLatestByTickerAndTimeframeAndEndDate(
-            ticker, IntradayTimeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
+            ticker, Timeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
         .thenReturn(List.of(secondBar, firstBar));
     when(liveQuoteRepository.findByTicker(ticker)).thenReturn(Optional.empty());
 
     List<OhlcvDto> result =
-        intradayPriceService.getIntradayPrice(ticker, IntradayTimeframe._15M, testDate, 0, 250);
+        intradayPriceService.getIntradayPrice(ticker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(2, result.size());
     assertEquals(firstTime, result.getFirst().priceDate());
@@ -135,12 +134,12 @@ class IntradayPriceServiceTest {
             .build();
 
     when(intradayPriceRepository.findLatestByTickerAndTimeframeAndEndDate(
-            ticker, IntradayTimeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
+            ticker, Timeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
         .thenReturn(List.of(firstBar));
     when(liveQuoteRepository.findByTicker(ticker)).thenReturn(Optional.of(liveQuote));
 
     List<OhlcvDto> result =
-        intradayPriceService.getIntradayPrice(ticker, IntradayTimeframe._15M, testDate, 0, 250);
+        intradayPriceService.getIntradayPrice(ticker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(2, result.size());
     OhlcvDto liveCandle = result.getLast();
@@ -164,12 +163,12 @@ class IntradayPriceServiceTest {
             .build();
 
     when(intradayPriceRepository.findLatestByTickerAndTimeframeAndEndDate(
-            ticker, IntradayTimeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
+            ticker, Timeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
         .thenReturn(List.of());
     when(liveQuoteRepository.findByTicker(ticker)).thenReturn(Optional.of(liveQuote));
 
     List<OhlcvDto> result =
-        intradayPriceService.getIntradayPrice(ticker, IntradayTimeframe._15M, testDate, 0, 250);
+        intradayPriceService.getIntradayPrice(ticker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(1, result.size());
     assertEquals(
@@ -202,12 +201,12 @@ class IntradayPriceServiceTest {
             .build();
 
     when(intradayPriceRepository.findLatestByTickerAndTimeframeAndEndDate(
-            ticker, IntradayTimeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
+            ticker, Timeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
         .thenReturn(List.of(existingBar));
     when(liveQuoteRepository.findByTicker(ticker)).thenReturn(Optional.of(liveQuote));
 
     List<OhlcvDto> result =
-        intradayPriceService.getIntradayPrice(ticker, IntradayTimeframe._15M, testDate, 0, 250);
+        intradayPriceService.getIntradayPrice(ticker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(1, result.size());
     OhlcvDto updatedCandle = result.getFirst();
@@ -244,12 +243,12 @@ class IntradayPriceServiceTest {
             .build();
 
     when(intradayPriceRepository.findLatestByTickerAndTimeframeAndEndDate(
-            ticker, IntradayTimeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
+            ticker, Timeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
         .thenReturn(List.of(existingBar));
     when(liveQuoteRepository.findByTicker(ticker)).thenReturn(Optional.of(liveQuote));
 
     List<OhlcvDto> result =
-        intradayPriceService.getIntradayPrice(ticker, IntradayTimeframe._15M, testDate, 0, 250);
+        intradayPriceService.getIntradayPrice(ticker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(1, result.size());
     OhlcvDto updatedCandle = result.getFirst();
@@ -286,12 +285,12 @@ class IntradayPriceServiceTest {
             .build();
 
     when(intradayPriceRepository.findLatestByTickerAndTimeframeAndEndDate(
-            ticker, IntradayTimeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
+            ticker, Timeframe._15M.getValue(), endDateTime, PageRequest.of(0, 250)))
         .thenReturn(List.of(latestBar));
     when(liveQuoteRepository.findByTicker(ticker)).thenReturn(Optional.of(staleQuote));
 
     List<OhlcvDto> result =
-        intradayPriceService.getIntradayPrice(ticker, IntradayTimeframe._15M, testDate, 0, 250);
+        intradayPriceService.getIntradayPrice(ticker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(1, result.size());
     assertEquals(latestBarTime, result.getFirst().priceDate());
@@ -329,7 +328,7 @@ class IntradayPriceServiceTest {
 
     List<OhlcvDto> result =
         intradayPriceService.getIntradayPrice(
-            angelOneTicker, IntradayTimeframe._15M, testDate, 0, 250);
+            angelOneTicker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(1, result.size());
     assertEquals(barTime, result.getFirst().priceDate());
@@ -380,7 +379,7 @@ class IntradayPriceServiceTest {
 
     List<OhlcvDto> result =
         intradayPriceService.getIntradayPrice(
-            angelOneTicker, IntradayTimeframe._15M, testDate, 0, 250);
+            angelOneTicker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(1, result.size());
     assertEquals(newBarTime, result.getFirst().priceDate());
@@ -417,7 +416,7 @@ class IntradayPriceServiceTest {
 
     List<OhlcvDto> result =
         intradayPriceService.getIntradayPrice(
-            angelOneTicker, IntradayTimeframe._15M, testDate, 0, 250);
+            angelOneTicker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(1, result.size());
     assertEquals(futureBarTime, result.getFirst().priceDate());
@@ -444,7 +443,7 @@ class IntradayPriceServiceTest {
 
     List<OhlcvDto> result =
         intradayPriceService.getIntradayPrice(
-            angelOneTicker, IntradayTimeframe._15M, testDate, 0, 250);
+            angelOneTicker, Timeframe._15M, testDate, 0, 250);
 
     assertEquals(0, result.size());
     verify(angelOneDownloader, times(1)).downloadAndPersistIntradayPrices();
@@ -467,7 +466,7 @@ class IntradayPriceServiceTest {
 
     List<OhlcvDto> result =
         intradayPriceService.getIntradayPrice(
-            angelOneTicker, IntradayTimeframe._15M, testDate, 1, 250);
+            angelOneTicker, Timeframe._15M, testDate, 1, 250);
 
     assertEquals(0, result.size());
     verify(angelOneDownloader, never()).downloadAndPersistIntradayPrices();
