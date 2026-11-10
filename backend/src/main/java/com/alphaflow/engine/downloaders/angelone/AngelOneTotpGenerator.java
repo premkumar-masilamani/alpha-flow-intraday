@@ -48,7 +48,7 @@ public class AngelOneTotpGenerator {
   }
 
   public byte[] decodeBase32(String base32) {
-    String clean = base32.trim().toUpperCase(Locale.ROOT).replaceAll("[=\\s]", "");
+    String clean = base32.trim().toUpperCase(Locale.ROOT).replaceAll("[=\\s-]", "");
     if (clean.isEmpty()) {
       return new byte[0];
     }
