@@ -257,4 +257,47 @@ class AngelOneScripMasterManagerTest {
     List<AngelOneInstrument> instruments = manager.getNfoOptions("NIFTY", tradingDay);
     assertTrue(instruments.isEmpty());
   }
+
+  @Test
+  void testPreWarmScripMasterTradingDay() {
+    LocalDate tradingDay = LocalDate.of(2026, 10, 16);
+    String sampleJson =
+        """
+        [
+          {
+            "token": "39756",
+            "symbol": "NIFTY09NOV2620300CE",
+            "name": "NIFTY",
+            "expiry": "09NOV2026",
+            "strike": "2030000.000000",
+            "lotsize": "65",
+            "instrumenttype": "OPTIDX",
+            "exch_seg": "NFO"
+          }
+        ]
+        """;
+    responseContent.set(sampleJson);
+    manager.preWarmScripMaster(tradingDay);
+
+    // Call again to test already pre-warmed branch
+    manager.preWarmScripMaster(tradingDay);
+
+    List<AngelOneInstrument> instruments = manager.getNfoOptions("NIFTY", tradingDay);
+    assertEquals(1, instruments.size());
+  }
+
+  @Test
+  void testPreWarmScripMasterNonTradingDay() {
+    LocalDate sunday = LocalDate.of(2026, 10, 18);
+    manager.preWarmScripMaster(sunday);
+    assertTrue(manager.getNfoOptions("NIFTY", sunday).isEmpty());
+  }
+
+  @Test
+  void testInitializeScripMasterAndNoArgPreWarm() {
+    manager.initializeScripMaster();
+    manager.preWarmScripMaster();
+    // Verify it executes cleanly without throwing
+    assertTrue(true);
+  }
 }

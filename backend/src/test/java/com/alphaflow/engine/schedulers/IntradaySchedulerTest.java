@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.alphaflow.engine.configs.AngelOneConfig;
 import com.alphaflow.engine.downloaders.AngelOneDownloader;
+import com.alphaflow.engine.downloaders.angelone.AngelOneScripMasterManager;
 import com.alphaflow.engine.services.TradingCalendarService;
 import com.alphaflow.engine.strategies.Intraday70PBounceStrategy;
 import com.alphaflow.persistence.entities.LiveQuote;
@@ -32,6 +33,7 @@ class IntradaySchedulerTest {
   private AngelOneConfig config;
   private AngelOneDownloader downloader;
   private Intraday70PBounceStrategy strategy;
+  private AngelOneScripMasterManager scripMasterManager;
   private IntradayScheduler scheduler;
   private Ticker niftyTicker;
   private LiveQuote liveQuote;
@@ -45,7 +47,8 @@ class IntradaySchedulerTest {
 
     downloader = mock(AngelOneDownloader.class);
     strategy = mock(Intraday70PBounceStrategy.class);
-    scheduler = new IntradayScheduler(config, downloader, strategy);
+    scripMasterManager = mock(AngelOneScripMasterManager.class);
+    scheduler = new IntradayScheduler(config, downloader, strategy, scripMasterManager);
 
     niftyTicker =
         Ticker.builder()
@@ -80,9 +83,16 @@ class IntradaySchedulerTest {
   }
 
   @Test
+  void testRunScheduledScripMasterPreWarm() {
+    scheduler.runScheduledScripMasterPreWarm();
+    verify(scripMasterManager, times(1)).preWarmScripMaster();
+  }
+
+  @Test
   void testRunScheduledLiveQuoteUpdateAndRunOnStartup() {
     scheduler.runScheduledLiveQuoteUpdate();
     scheduler.runOnStartup();
+    verify(scripMasterManager, times(1)).preWarmScripMaster();
     verify(downloader, times(1)).downloadAndPersistIntradayPrices();
   }
 
