@@ -1,11 +1,11 @@
 import type { MarketHoliday } from '../services/api';
 
-export type MarketCountry = 'IN' | 'US';
+export type MarketCountry = 'IN';
 export type MarketStatusType = 'OPEN' | 'HOLIDAY' | 'WEEKEND' | 'PRE_MARKET' | 'AFTER_HOURS';
 
 export interface MarketStatus {
     country: MarketCountry;
-    exchange: 'NSE' | 'NYSE';
+    exchange: 'NSE';
     isOpen: boolean;
     statusType: MarketStatusType;
     holidayName: string | null;
@@ -14,7 +14,7 @@ export interface MarketStatus {
 
 interface MarketConfig {
     timeZone: string;
-    exchange: 'NSE' | 'NYSE';
+    exchange: 'NSE';
     startHour: number;
     startMinute: number;
     endHour: number;
@@ -31,15 +31,6 @@ const MARKET_CONFIGS: Record<MarketCountry, MarketConfig> = {
         endHour: 15,
         endMinute: 30,
         tzAbbreviation: 'IST',
-    },
-    US: {
-        timeZone: 'America/New_York',
-        exchange: 'NYSE',
-        startHour: 9,
-        startMinute: 30,
-        endHour: 16,
-        endMinute: 0,
-        tzAbbreviation: 'EST',
     },
 };
 

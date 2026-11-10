@@ -55,7 +55,6 @@ class AngelOneDownloaderTest {
     config.setClientCode("test-code");
     config.setPassword("test-pwd");
     config.setTotpKey("test-totp");
-    config.setDelayMilliseconds(0);
     config.setSessionStartTime(LocalTime.of(9, 15));
     config.setSessionEndTime(LocalTime.of(15, 30));
     config.setBackfillStartDate(LocalDate.of(2015, 1, 1));

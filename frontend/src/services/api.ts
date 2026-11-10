@@ -4,15 +4,10 @@ const API_BASE_URL = `${import.meta.env.NEXT_PUBLIC_API_URL || ''}/api`;
 
 export const CHART_WINDOW = 250;
 
-export type TickerType = 'STOCK' | 'INDEX';
-export type Country = 'US' | 'IN';
-
 export interface Ticker {
   id: number;
   symbol: string;
   name: string;
-  type?: TickerType;
-  country?: Country;
 }
 
 export interface DailyCandleData {
@@ -24,20 +19,7 @@ export interface DailyCandleData {
   vol: number;
 }
 
-export interface LiveQuoteData {
-  symbol: string;
-  lastPrice: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  change: number;
-  changePercent: number;
-  quoteTime: string;
-}
-
-export type Timeframe = '15M' | 'DAILY' | 'WEEKLY';
+export type Timeframe = '15M';
 
 export const getTickers = async (): Promise<Ticker[]> => {
   const response = await axios.get(`${API_BASE_URL}/tickers`);
@@ -85,11 +67,6 @@ export const getCandleData = async (
     candleDataCache.delete(oldestKey);
   }
 
-  return response.data;
-};
-
-export const getLiveQuote = async (symbol: string): Promise<LiveQuoteData> => {
-  const response = await axios.get(`${API_BASE_URL}/tickers/${symbol}/quote`);
   return response.data;
 };
 
@@ -162,80 +139,3 @@ export const getCachedMarketHolidays = async (): Promise<MarketHoliday[]> => {
 
   return inFlightHolidaysPromise;
 };
-
-// ============================================================================
-// Compatibility types for Chart component
-// ============================================================================
-
-export interface IndicatorConfig {
-  timeframe: string;
-  type: string;
-  source: string;
-  params: string;
-  label: string;
-}
-
-export interface IndicatorPoint {
-  date: string;
-  values: Record<string, number>;
-}
-
-export interface IndicatorSeries {
-  type: string;
-  source: string;
-  params: string;
-  label: string;
-  points: IndicatorPoint[];
-}
-
-export const indicatorKey = (i: { type: string; source: string; params: string }): string =>
-  `${i.type}|${i.source}|${i.params}`;
-
-export type LevelType = 'SUPPORT' | 'RESISTANCE';
-
-export interface SupportResistanceData {
-  priceDate: string;
-  firstTouchDate?: string;
-  lastTouchDate?: string;
-  zoneBottom: number;
-  zoneTop: number;
-  zoneMidpoint: number;
-  levelType: LevelType;
-  touchCount: number;
-}
-
-export type ChartPatternStatus = 'IN_PROGRESS' | 'COMPLETED' | 'TARGET_REACHED' | 'INVALIDATED';
-
-export interface ChartPatternPivotData {
-  date: string;
-  price: number;
-  type: 'HIGH' | 'LOW';
-  role: string;
-}
-
-export interface ChartPatternData {
-  id: number;
-  patternType: string;
-  shortName: string;
-  displayName: string;
-  sentiment: string;
-  status: ChartPatternStatus;
-  startDate: string;
-  endDate: string;
-  breakoutDate?: string | null;
-  necklineSlope?: number | null;
-  necklinePrice?: number | null;
-  targetPrice?: number | null;
-  stopLossPrice?: number | null;
-  invalidationPrice?: number | null;
-  pivotPoints: ChartPatternPivotData[];
-}
-
-export type SentimentType = 'BULLISH' | 'BEARISH' | 'NEUTRAL';
-
-export interface CandlestickPatternData {
-  date: string;
-  shortName: string;
-  longName: string;
-  sentiment: SentimentType;
-}

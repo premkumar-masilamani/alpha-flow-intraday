@@ -157,19 +157,4 @@ public class MarketTradingCalendar {
           .toOffsetDateTime();
     }
   }
-
-  public static LocalDate getExpectedLatestTradingDate(
-      ZonedDateTime nowInMarket, LocalTime cutoffTime, Country country) {
-    LocalDate candidate;
-    if (nowInMarket.toLocalTime().isBefore(cutoffTime)) {
-      candidate = nowInMarket.toLocalDate().minusDays(1);
-    } else {
-      candidate = nowInMarket.toLocalDate();
-    }
-
-    while (!isTradingDay(candidate, country)) {
-      candidate = candidate.minusDays(1);
-    }
-    return candidate;
-  }
 }

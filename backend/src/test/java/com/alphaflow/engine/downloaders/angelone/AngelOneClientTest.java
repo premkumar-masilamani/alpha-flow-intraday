@@ -44,7 +44,6 @@ class AngelOneClientTest {
         "http://localhost:" + port + "/rest/secure/angelbroking/historical/v1/getCandleData");
     config.setQuoteUrl("http://localhost:" + port + "/rest/secure/angelbroking/market/v1/quote");
     config.setApiKey("test-key");
-    config.setDelayMilliseconds(0);
 
     authManager = mock(AngelOneAuthManager.class);
     when(authManager.getValidJwtToken()).thenReturn("mock-bearer-token");

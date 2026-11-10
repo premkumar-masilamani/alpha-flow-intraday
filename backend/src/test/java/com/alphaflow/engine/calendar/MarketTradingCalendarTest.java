@@ -24,7 +24,6 @@ class MarketTradingCalendarTest {
 
   private final ZoneId usZone = ZoneId.of("America/New_York");
   private final ZoneId istZone = ZoneId.of("Asia/Kolkata");
-  private final LocalTime cutoffTime = LocalTime.of(17, 0);
 
   private MarketHolidayRepository marketHolidayRepository;
 
@@ -159,84 +158,6 @@ class MarketTradingCalendarTest {
     // in US
     assertFalse(MarketTradingCalendar.isTradingDay(LocalDate.of(2026, 1, 26), Country.IN));
     assertTrue(MarketTradingCalendar.isTradingDay(LocalDate.of(2026, 1, 26), Country.US));
-  }
-
-  @Test
-  void testGetExpectedLatestTradingDateOnWeekdayAfterCutoff() {
-    // Wednesday 17:30 EST -> expects today (Wednesday)
-    ZonedDateTime now = ZonedDateTime.of(LocalDate.of(2026, 10, 7), LocalTime.of(17, 30), usZone);
-    LocalDate expected =
-        MarketTradingCalendar.getExpectedLatestTradingDate(now, cutoffTime, Country.US);
-    assertEquals(LocalDate.of(2026, 10, 7), expected);
-  }
-
-  @Test
-  void testGetExpectedLatestTradingDateOnWeekdayAtCutoff() {
-    // Wednesday 17:00 EST -> expects today (Wednesday)
-    ZonedDateTime now = ZonedDateTime.of(LocalDate.of(2026, 10, 7), LocalTime.of(17, 0), usZone);
-    LocalDate expected =
-        MarketTradingCalendar.getExpectedLatestTradingDate(now, cutoffTime, Country.US);
-    assertEquals(LocalDate.of(2026, 10, 7), expected);
-  }
-
-  @Test
-  void testGetExpectedLatestTradingDateOnWeekdayBeforeCutoff() {
-    // Wednesday 16:59 EST -> expects yesterday (Tuesday)
-    ZonedDateTime now = ZonedDateTime.of(LocalDate.of(2026, 10, 7), LocalTime.of(16, 59), usZone);
-    LocalDate expected =
-        MarketTradingCalendar.getExpectedLatestTradingDate(now, cutoffTime, Country.US);
-    assertEquals(LocalDate.of(2026, 10, 6), expected);
-  }
-
-  @Test
-  void testGetExpectedLatestTradingDateOnMondayBeforeCutoff() {
-    // Monday 09:30 EST -> expects previous Friday
-    ZonedDateTime now = ZonedDateTime.of(LocalDate.of(2026, 10, 5), LocalTime.of(9, 30), usZone);
-    LocalDate expected =
-        MarketTradingCalendar.getExpectedLatestTradingDate(now, cutoffTime, Country.US);
-    assertEquals(LocalDate.of(2026, 10, 2), expected);
-  }
-
-  @Test
-  void testGetExpectedLatestTradingDateOnWeekend() {
-    // Saturday 12:00 EST -> expects previous Friday
-    ZonedDateTime saturday =
-        ZonedDateTime.of(LocalDate.of(2026, 10, 10), LocalTime.of(12, 0), usZone);
-    assertEquals(
-        LocalDate.of(2026, 10, 9),
-        MarketTradingCalendar.getExpectedLatestTradingDate(saturday, cutoffTime, Country.US));
-
-    // Sunday 18:00 EST -> expects previous Friday
-    ZonedDateTime sunday =
-        ZonedDateTime.of(LocalDate.of(2026, 10, 11), LocalTime.of(18, 0), usZone);
-    assertEquals(
-        LocalDate.of(2026, 10, 9),
-        MarketTradingCalendar.getExpectedLatestTradingDate(sunday, cutoffTime, Country.US));
-  }
-
-  @Test
-  void testGetExpectedLatestTradingDateOnHoliday() {
-    // MLK Day (Monday, 2026-01-19) after cutoff -> expects Friday 2026-01-16 for US
-    ZonedDateTime mlkDayEvening =
-        ZonedDateTime.of(LocalDate.of(2026, 1, 19), LocalTime.of(18, 0), usZone);
-    assertEquals(
-        LocalDate.of(2026, 1, 16),
-        MarketTradingCalendar.getExpectedLatestTradingDate(mlkDayEvening, cutoffTime, Country.US));
-
-    // Tuesday (2026-01-20) before cutoff -> expects Friday 2026-01-16 for US
-    ZonedDateTime tuesdayMorning =
-        ZonedDateTime.of(LocalDate.of(2026, 1, 20), LocalTime.of(10, 0), usZone);
-    assertEquals(
-        LocalDate.of(2026, 1, 16),
-        MarketTradingCalendar.getExpectedLatestTradingDate(tuesdayMorning, cutoffTime, Country.US));
-
-    // Gandhi Jayanti (Friday, 2026-10-02) after cutoff -> expects Thursday 2026-10-01 for India
-    ZonedDateTime gandhiJayantiEvening =
-        ZonedDateTime.of(LocalDate.of(2026, 10, 2), LocalTime.of(18, 0), istZone);
-    assertEquals(
-        LocalDate.of(2026, 10, 1),
-        MarketTradingCalendar.getExpectedLatestTradingDate(
-            gandhiJayantiEvening, cutoffTime, Country.IN));
   }
 
   @Test

@@ -441,9 +441,6 @@ function App() {
                 {intradayCandles.length > 0 ? (
                   <Chart
                     data={intradayCandles}
-                    indicators={[]}
-                    enabled={new Set()}
-                    configs={[]}
                     symbol={selectedTicker}
                     timeframe="15M"
                     showVolume={false}

@@ -5,9 +5,11 @@ import com.alphaflow.api.services.MarketHolidayService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api")
 @Slf4j
 public class MarketHolidayController {
 
@@ -17,7 +19,7 @@ public class MarketHolidayController {
     this.marketHolidayService = marketHolidayService;
   }
 
-  @GetMapping({"/api/market-holidays", "/api/markets/holidays"})
+  @GetMapping("/markets/holidays")
   public List<MarketHolidayDto> getHolidays() {
     log.info("Request to get all market holidays");
     return marketHolidayService.getHolidays();
