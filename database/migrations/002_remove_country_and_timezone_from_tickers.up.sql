@@ -1,0 +1,2 @@
+ALTER TABLE tickers DROP COLUMN IF EXISTS country;
+ALTER TABLE tickers DROP COLUMN IF EXISTS timezone;

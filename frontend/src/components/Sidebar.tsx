@@ -1,0 +1,43 @@
+import React from 'react';
+import type { Ticker } from '../services/api';
+
+interface SidebarProps {
+    tickers: Ticker[];
+    selectedTicker: string | null;
+    onSelectTicker: (symbol: string) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ tickers, selectedTicker, onSelectTicker }) => {
+    return (
+        <div className="w-64 bg-slate-800 text-slate-300 flex flex-col h-full border-r border-slate-700 select-none">
+            <div className="p-4 border-b border-slate-700">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Tickers</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto py-2">
+                {tickers.length === 0 ? (
+                    <div className="px-5 py-2 text-xs text-slate-500 italic">
+                        None available
+                    </div>
+                ) : (
+                    <ul>
+                        {tickers.map((ticker) => (
+                            <li key={ticker.symbol}>
+                                <button
+                                    onClick={() => onSelectTicker(ticker.symbol)}
+                                    className={`w-full text-left px-4 py-2 hover:bg-slate-700 transition-colors flex flex-col ${
+                                        selectedTicker === ticker.symbol ? 'bg-slate-700 text-white border-l-4 border-blue-500' : 'pl-5'
+                                    }`}
+                                >
+                                    <span className="font-medium text-sm">{ticker.symbol}</span>
+                                    <span className="text-[10px] text-slate-500 truncate w-full">{ticker.name}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Sidebar;
