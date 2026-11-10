@@ -119,4 +119,15 @@ class RateLimiterTest {
     RateLimiter rateLimiter = new RateLimiter(rateLimiterConfig);
     assertDoesNotThrow(() -> rateLimiter.applyBackoff(1, "testContext"));
   }
+
+  @Test
+  void testDefaultConfigValues() {
+    RateLimiterConfig config = new RateLimiterConfig();
+    assertEquals(2500L, config.getDelayMilliseconds());
+    assertEquals(0L, config.getInterChunkDelayMilliseconds());
+    assertEquals(4, config.getMaxRateLimitRetries());
+    assertEquals(10000L, config.getInitialBackoffMs());
+    assertEquals(2.0, config.getBackoffMultiplier());
+    assertEquals(2000L, config.getJitterRangeMs());
+  }
 }

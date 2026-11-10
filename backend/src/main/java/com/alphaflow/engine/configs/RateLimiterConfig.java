@@ -16,20 +16,20 @@ import org.springframework.context.annotation.Configuration;
 public class RateLimiterConfig {
 
   @Builder.Default
-  private long delayMilliseconds = 1000L;
+  private long delayMilliseconds = 2500L;
 
   @Builder.Default
-  private long interChunkDelayMilliseconds = 1000L;
+  private long interChunkDelayMilliseconds = 0L;
 
   @Builder.Default
   private int maxRateLimitRetries = 4;
 
   @Builder.Default
-  private long initialBackoffMs = 5000L;
+  private long initialBackoffMs = 10000L;
 
   @Builder.Default
   private double backoffMultiplier = 2.0;
 
   @Builder.Default
-  private long jitterRangeMs = 1000L;
+  private long jitterRangeMs = 2000L;
 }
