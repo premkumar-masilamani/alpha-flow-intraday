@@ -1,20 +1,22 @@
 import React, { useEffect, useRef } from 'react';
 import type {
     ISeriesApi,
-    Time,
     ISeriesPrimitive,
     IPrimitivePaneView,
     IPrimitivePaneRenderer,
     AutoscaleInfo,
+    IPriceLine,
 } from 'lightweight-charts';
 import { CandlestickSeries, ColorType, createChart, HistogramSeries, LineStyle } from 'lightweight-charts';
 import { RefreshCw } from 'lucide-react';
 import type { DailyCandleData } from '../services/api';
+import { sanitizeAndOrderCandles } from '../utils/chartHelpers';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 class PrevDayLevelsPrimitive implements ISeriesPrimitive {
     private _series: ISeriesApi<any> | null = null;
+    private _requestUpdate?: () => void;
     private _pdh: number | null;
     private _pdl: number | null;
 
@@ -23,12 +25,14 @@ class PrevDayLevelsPrimitive implements ISeriesPrimitive {
         this._pdl = pdl;
     }
 
-    attached(param: { series: ISeriesApi<any> }) {
+    attached(param: { series: ISeriesApi<any>; requestUpdate?: () => void }) {
         this._series = param.series;
+        this._requestUpdate = param.requestUpdate;
     }
 
     detached() {
         this._series = null;
+        this._requestUpdate = undefined;
     }
 
     paneViews() {
@@ -38,6 +42,14 @@ class PrevDayLevelsPrimitive implements ISeriesPrimitive {
     getPdh() { return this._pdh; }
     getPdl() { return this._pdl; }
     getSeries() { return this._series; }
+
+    updateLevels(pdh: number | null, pdl: number | null) {
+        this._pdh = pdh;
+        this._pdl = pdl;
+        if (this._requestUpdate) {
+            this._requestUpdate();
+        }
+    }
 }
 
 class PrevDayLevelsPaneView implements IPrimitivePaneView {
@@ -78,7 +90,7 @@ class PrevDayLevelsRenderer implements IPrimitivePaneRenderer {
 
             const drawLabel = (price: number, label: string, color: string) => {
                 const y = series.priceToCoordinate(price);
-                if (y === null) return;
+                if (y === null || isNaN(y)) return;
 
                 ctx.save();
                 ctx.font = `bold ${Math.max(10, Math.round(11 * vRatio))}px sans-serif`;
@@ -129,21 +141,6 @@ export interface ChartProps {
     onLoadOlderData?: () => void;
 }
 
-const toChartTime = (dateStr: string): Time => {
-    if (!dateStr) return dateStr as Time;
-    const d = new Date(dateStr);
-    return Math.floor(
-        Date.UTC(
-            d.getFullYear(),
-            d.getMonth(),
-            d.getDate(),
-            d.getHours(),
-            d.getMinutes(),
-            d.getSeconds()
-        ) / 1000
-    ) as Time;
-};
-
 const Chart: React.FC<ChartProps> = ({
     data,
     symbol,
@@ -154,14 +151,34 @@ const Chart: React.FC<ChartProps> = ({
 }) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
+    const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+    const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+    const primitiveRef = useRef<PrevDayLevelsPrimitive | null>(null);
+    const pdhLineRef = useRef<IPriceLine | null>(null);
+    const pdlLineRef = useRef<IPriceLine | null>(null);
+    const pdhRef = useRef<number | null>(previousDayHigh);
+    const pdlRef = useRef<number | null>(previousDayLow);
+    const hasFittedRef = useRef<boolean>(false);
 
+    // Keep PDH/PDL refs current for autoscale provider
     useEffect(() => {
-        if (!chartContainerRef.current || data.length === 0) {
+        pdhRef.current = previousDayHigh;
+        pdlRef.current = previousDayLow;
+    }, [previousDayHigh, previousDayLow]);
+
+    // Reset fit flag when symbol or timeframe changes
+    useEffect(() => {
+        hasFittedRef.current = false;
+    }, [symbol, timeframe]);
+
+    // 1. Chart initialization effect: runs when container, symbol, or timeframe changes
+    useEffect(() => {
+        if (!chartContainerRef.current) {
             return;
         }
 
-        const width = chartContainerRef.current.clientWidth;
-        const height = chartContainerRef.current.clientHeight || 600;
+        const width = Math.max(chartContainerRef.current.clientWidth || 300, 100);
+        const height = Math.max(chartContainerRef.current.clientHeight || 600, 100);
 
         const chart = createChart(chartContainerRef.current, {
             layout: {
@@ -183,37 +200,35 @@ const Chart: React.FC<ChartProps> = ({
         });
         chartRef.current = chart;
 
-        const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date));
-
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
             upColor: '#22c55e',
             downColor: '#ef4444',
             borderVisible: false,
             wickUpColor: '#22c55e',
             wickDownColor: '#ef4444',
-            ...(previousDayHigh != null || previousDayLow != null ? {
-                autoscaleInfoProvider: (original: () => AutoscaleInfo | null) => {
-                    const res = original();
-                    if (!res || !res.priceRange) return res;
-                    let min = res.priceRange.minValue;
-                    let max = res.priceRange.maxValue;
-                    if (previousDayLow != null && !isNaN(previousDayLow)) {
-                        min = Math.min(min, previousDayLow);
-                    }
-                    if (previousDayHigh != null && !isNaN(previousDayHigh)) {
-                        max = Math.max(max, previousDayHigh);
-                    }
-                    const span = max - min;
-                    const margin = span > 0 ? span * 0.02 : 5;
-                    return {
-                        ...res,
-                        priceRange: {
-                            minValue: min - margin,
-                            maxValue: max + margin,
-                        },
-                    };
+            autoscaleInfoProvider: (original: () => AutoscaleInfo | null) => {
+                const res = original();
+                if (!res || !res.priceRange) return res;
+                let min = res.priceRange.minValue;
+                let max = res.priceRange.maxValue;
+                const pdl = pdlRef.current;
+                const pdh = pdhRef.current;
+                if (pdl != null && !isNaN(pdl)) {
+                    min = Math.min(min, pdl);
                 }
-            } : {}),
+                if (pdh != null && !isNaN(pdh)) {
+                    max = Math.max(max, pdh);
+                }
+                const span = max - min;
+                const margin = span > 0 ? span * 0.02 : 5;
+                return {
+                    ...res,
+                    priceRange: {
+                        minValue: min - margin,
+                        maxValue: max + margin,
+                    },
+                };
+            },
         });
 
         candlestickSeries.priceScale().applyOptions({
@@ -223,16 +238,95 @@ const Chart: React.FC<ChartProps> = ({
             },
         });
 
-        candlestickSeries.setData(sortedData.map((d) => ({
-            time: toChartTime(d.date),
-            open: Number(d.open),
-            high: Number(d.high),
-            low: Number(d.low),
-            close: Number(d.close),
-        })));
+        candlestickSeriesRef.current = candlestickSeries;
 
-        if (previousDayHigh !== undefined && previousDayHigh !== null && !isNaN(previousDayHigh)) {
-            candlestickSeries.createPriceLine({
+        const primitive = new PrevDayLevelsPrimitive(pdhRef.current, pdlRef.current);
+        primitiveRef.current = primitive;
+        candlestickSeries.attachPrimitive(primitive);
+
+        if (showVolume) {
+            const volumeSeries = chart.addSeries(HistogramSeries, {
+                color: '#3b82f6',
+                priceFormat: { type: 'volume' },
+                priceScaleId: '',
+            });
+            volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+            volumeSeriesRef.current = volumeSeries;
+        }
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            if (!entries || entries.length === 0) return;
+            const { width: newWidth, height: newHeight } = entries[0].contentRect;
+            if (newWidth > 0 && newHeight > 0 && chartRef.current) {
+                chartRef.current.applyOptions({ width: newWidth, height: newHeight });
+            }
+        });
+
+        if (chartContainerRef.current) {
+            resizeObserver.observe(chartContainerRef.current);
+        }
+
+        return () => {
+            resizeObserver.disconnect();
+            candlestickSeriesRef.current = null;
+            volumeSeriesRef.current = null;
+            primitiveRef.current = null;
+            pdhLineRef.current = null;
+            pdlLineRef.current = null;
+            chartRef.current = null;
+            chart.remove();
+        };
+    }, [symbol, timeframe, showVolume]);
+
+    // 2. Data update effect: safely updates series data without tearing down the chart instance
+    useEffect(() => {
+        const candlestickSeries = candlestickSeriesRef.current;
+        const chart = chartRef.current;
+        if (!candlestickSeries || !chart || data.length === 0) {
+            return;
+        }
+
+        const sanitized = sanitizeAndOrderCandles(data);
+        if (sanitized.length === 0) return;
+
+        try {
+            candlestickSeries.setData(sanitized.map((d) => ({
+                time: d.time,
+                open: d.open,
+                high: d.high,
+                low: d.low,
+                close: d.close,
+            })));
+
+            if (volumeSeriesRef.current && showVolume) {
+                volumeSeriesRef.current.setData(sanitized.map((d) => ({
+                    time: d.time,
+                    value: d.vol,
+                    color: d.close >= d.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+                })));
+            }
+
+            if (!hasFittedRef.current) {
+                chart.timeScale().fitContent();
+                hasFittedRef.current = true;
+            }
+        } catch (error) {
+            console.error('Failed to update chart series data:', error);
+        }
+    }, [data, showVolume]);
+
+    // 3. PDH / PDL level update effect: updates price lines and primitives dynamically
+    useEffect(() => {
+        const candlestickSeries = candlestickSeriesRef.current;
+        if (!candlestickSeries) return;
+
+        // Update PDH line
+        if (pdhLineRef.current) {
+            candlestickSeries.removePriceLine(pdhLineRef.current);
+            pdhLineRef.current = null;
+        }
+        if (previousDayHigh !== null && previousDayHigh !== undefined && !isNaN(previousDayHigh)) {
+            pdhLineRef.current = candlestickSeries.createPriceLine({
                 price: previousDayHigh,
                 color: '#22c55e',
                 lineWidth: 1,
@@ -242,8 +336,13 @@ const Chart: React.FC<ChartProps> = ({
             });
         }
 
-        if (previousDayLow !== undefined && previousDayLow !== null && !isNaN(previousDayLow)) {
-            candlestickSeries.createPriceLine({
+        // Update PDL line
+        if (pdlLineRef.current) {
+            candlestickSeries.removePriceLine(pdlLineRef.current);
+            pdlLineRef.current = null;
+        }
+        if (previousDayLow !== null && previousDayLow !== undefined && !isNaN(previousDayLow)) {
+            pdlLineRef.current = candlestickSeries.createPriceLine({
                 price: previousDayLow,
                 color: '#ef4444',
                 lineWidth: 1,
@@ -253,46 +352,19 @@ const Chart: React.FC<ChartProps> = ({
             });
         }
 
-        if ((previousDayHigh != null && !isNaN(previousDayHigh)) || (previousDayLow != null && !isNaN(previousDayLow))) {
-            candlestickSeries.attachPrimitive(new PrevDayLevelsPrimitive(previousDayHigh, previousDayLow));
+        // Update primitive
+        if (primitiveRef.current) {
+            primitiveRef.current.updateLevels(previousDayHigh, previousDayLow);
         }
-
-        if (showVolume) {
-            const volumeSeries = chart.addSeries(HistogramSeries, {
-                color: '#3b82f6',
-                priceFormat: { type: 'volume' },
-                priceScaleId: '',
-            });
-            volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
-            volumeSeries.setData(sortedData.map((d) => ({
-                time: toChartTime(d.date),
-                value: Number(d.vol),
-                color: Number(d.close) >= Number(d.open) ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
-            })));
-        }
-
-        chart.timeScale().fitContent();
-
-        const resizeObserver = new ResizeObserver((entries) => {
-            if (!entries || entries.length === 0) return;
-            const { width: newWidth, height: newHeight } = entries[0].contentRect;
-            chart.applyOptions({ width: newWidth, height: newHeight });
-        });
-
-        if (chartContainerRef.current) {
-            resizeObserver.observe(chartContainerRef.current);
-        }
-
-        return () => {
-            resizeObserver.disconnect();
-            chartRef.current = null;
-            chart.remove();
-        };
-    }, [data, symbol, timeframe, showVolume, previousDayHigh, previousDayLow]);
+    }, [previousDayHigh, previousDayLow]);
 
     const handleResetZoom = () => {
         if (!chartRef.current || data.length === 0) return;
-        chartRef.current.timeScale().fitContent();
+        try {
+            chartRef.current.timeScale().fitContent();
+        } catch (error) {
+            console.warn('Failed to reset chart zoom:', error);
+        }
     };
 
     return (

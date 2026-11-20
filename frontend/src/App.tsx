@@ -3,6 +3,7 @@ import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Chart from "./components/Chart";
 import PriceSummaryBanner from "./components/PriceSummaryBanner";
+import ErrorBoundary from "./components/ErrorBoundary";
 import {
   type DailyCandleData,
   getCandleData,
@@ -13,6 +14,7 @@ import {
 } from "./services/api";
 import {
   getMarketStatus,
+  getMarketParts,
   getExpectedIntradayDateKey,
   getCalendarDayRange,
   getDayNonTradingReason,
@@ -48,10 +50,9 @@ const getInitialTicker = (): string | null => {
 
 const getLocalDateKey = (dateStr: string): string => {
   const d = new Date(dateStr);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  if (isNaN(d.getTime())) return dateStr.split("T")[0] || "";
+  const parts = getMarketParts(d, "Asia/Kolkata");
+  return parts.dateKey;
 };
 
 const formatSectionDate = (dateStr?: string | null): string => {
@@ -84,6 +85,14 @@ function App() {
   const [hasOlderIntraday, setHasOlderIntraday] = useState(true);
   const [intradayError, setIntradayError] = useState<string | null>(null);
   const [marketHolidays, setMarketHolidays] = useState<MarketHoliday[]>([]);
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -153,12 +162,14 @@ function App() {
   }, [selectedTickerCountry, marketHolidays]);
 
   const expectedIntradayDay = useMemo(() => {
-    return getExpectedIntradayDateKey(new Date(), selectedTickerCountry);
-  }, [selectedTickerCountry]);
+    return getExpectedIntradayDateKey(currentDate, selectedTickerCountry);
+  }, [currentDate, selectedTickerCountry]);
 
   // Calculate all calendar days from oldest available candle day up to expected current date
   const distinctDays = useMemo(() => {
-    const sorted = [...rawIntradayCandles].sort((a, b) => a.date.localeCompare(b.date));
+    const sorted = [...rawIntradayCandles].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
     const candleDays = Array.from(new Set(sorted.map((c) => getLocalDateKey(c.date))));
     if (candleDays.length === 0) {
       return expectedIntradayDay ? [expectedIntradayDay] : [];
@@ -231,7 +242,9 @@ function App() {
       setRawIntradayCandles((prev) => {
         const merged = [...strictlyOlder, ...prev];
         const unique = Array.from(new Map(merged.map((c) => [c.date, c])).values());
-        return unique.sort((a, b) => a.date.localeCompare(b.date));
+        return unique.sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
       });
 
       if (autoSelectPrev && prevDayToSelect) {
@@ -264,14 +277,18 @@ function App() {
   const intradayCandles = useMemo(() => {
     if (!activeDay) return [];
     const filtered = rawIntradayCandles.filter((c) => getLocalDateKey(c.date) === activeDay);
-    return [...filtered].sort((a, b) => a.date.localeCompare(b.date));
+    return [...filtered].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   }, [rawIntradayCandles, activeDay]);
 
   const { prevDayHigh, prevDayLow, prevDayClose } = useMemo(() => {
     if (activeDay) {
       const priorCandles = rawIntradayCandles.filter((c) => getLocalDateKey(c.date) < activeDay);
       if (priorCandles.length > 0) {
-        const sortedPrior = [...priorCandles].sort((a, b) => a.date.localeCompare(b.date));
+        const sortedPrior = [...priorCandles].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
         const latestPriorDayKey = getLocalDateKey(sortedPrior[sortedPrior.length - 1].date);
         const prevCandles = sortedPrior.filter(
           (c) => getLocalDateKey(c.date) === latestPriorDayKey,
@@ -318,7 +335,9 @@ function App() {
             for (const c of rawCandles) {
               byDate.set(c.date, c);
             }
-            return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+            return Array.from(byDate.values()).sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
           });
         }
       } catch (err) {
@@ -439,15 +458,17 @@ function App() {
               {/* 15m Candlestick Chart */}
               <div className="flex-1 relative min-h-0 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
                 {intradayCandles.length > 0 ? (
-                  <Chart
-                    data={intradayCandles}
-                    symbol={selectedTicker}
-                    timeframe="15M"
-                    showVolume={false}
-                    previousDayHigh={prevDayHigh}
-                    previousDayLow={prevDayLow}
-                    onLoadOlderData={() => {}}
-                  />
+                  <ErrorBoundary fallbackTitle="Chart Rendering Error">
+                    <Chart
+                      data={intradayCandles}
+                      symbol={selectedTicker}
+                      timeframe="15M"
+                      showVolume={false}
+                      previousDayHigh={prevDayHigh}
+                      previousDayLow={prevDayLow}
+                      onLoadOlderData={() => {}}
+                    />
+                  </ErrorBoundary>
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-3 p-8">
                     {intradayLoading ? (
